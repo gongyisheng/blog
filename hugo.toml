@@ -1,4 +1,4 @@
 baseURL = 'https://blog.yellowday.day/'
 languageCode = 'en-us'
-title = 'My New Hugo Site'
+title = "Yisheng's Blog"
 theme = 'nostyle'
