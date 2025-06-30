@@ -2,3 +2,7 @@ baseURL = 'https://blog.yellowday.day/'
 languageCode = 'en-us'
 title = "Yisheng's Blog"
 theme = 'nostyle'
+
+[caches]
+  [caches.images]
+    dir = ':cacheDir/images'
