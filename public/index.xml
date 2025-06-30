@@ -6,10 +6,17 @@
     <description>Recent content on Yisheng&#39;s Blog</description>
     <generator>Hugo</generator>
     <language>en-us</language>
-    <lastBuildDate>Sat, 15 Apr 2023 12:00:00 -0700</lastBuildDate>
+    <lastBuildDate>Sat, 06 May 2023 12:00:00 -0700</lastBuildDate>
     <atom:link href="https://blog.yellowday.day/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>Packet capture experiment 1</title>
+      <title>为什么我的网络传输速度下降了</title>
+      <link>https://blog.yellowday.day/%E4%B8%BA%E4%BB%80%E4%B9%88%E6%88%91%E7%9A%84%E7%BD%91%E7%BB%9C%E4%BC%A0%E8%BE%93%E9%80%9F%E5%BA%A6%E4%B8%8B%E9%99%8D%E4%BA%86/</link>
+      <pubDate>Sat, 06 May 2023 12:00:00 -0700</pubDate>
+      <guid>https://blog.yellowday.day/%E4%B8%BA%E4%BB%80%E4%B9%88%E6%88%91%E7%9A%84%E7%BD%91%E7%BB%9C%E4%BC%A0%E8%BE%93%E9%80%9F%E5%BA%A6%E4%B8%8B%E9%99%8D%E4%BA%86/</guid>
+      <description>&lt;h3 id=&#34;背景&#34;&gt;背景&lt;/h3&gt;&#xA;&lt;p&gt;这个问题一开始是在进行RDS实验的时候发现的。最初的情景是，多台机器同时对数据库进行select和insert操作时，会发现insert操作会造成select操作qps大幅下降，且insert操作结束之后select操作的qps仍不能回升。起初以为是RDS的问题，但是在复现问题、监控RDS之后发现RDS的压力其实很小。于是开始怀疑是网络的问题，在简化了场景和操作之后，发现能在过去做tcp实验的机器上复现，于是用这个更简单的场景进行问题复现和分析。&lt;/p&gt;&#xA;&lt;h3 id=&#34;环境&#34;&gt;环境&lt;/h3&gt;&#xA;&lt;p&gt;linux kernal version: 6.1&lt;br&gt;&#xA;linux image: amazon/al2023-ami-2023.0.20230419.0-kernel-6.1-x86_64&lt;br&gt;&#xA;instance type: AWS t2.micro (1 vCPU, 1GiB RAM)&lt;br&gt;&#xA;tc qdisc: fq_codel&lt;/p&gt;&#xA;&lt;p&gt;无网络流量情况下：&lt;br&gt;&#xA;network rtt: 0.5 ms&lt;br&gt;&#xA;network bandwidth: 60 MB/s&lt;/p&gt;&#xA;&lt;h3 id=&#34;操作&#34;&gt;操作&lt;/h3&gt;&#xA;&lt;ol&gt;&#xA;&lt;li&gt;开三台 t2.micro 机器，一台做 server，两台做client，在server上放一个 2GB 大小的文件&lt;/li&gt;&#xA;&lt;li&gt;client1 通过 curl get server 文件&lt;/li&gt;&#xA;&lt;li&gt;等待一段时间（约20s），client1网速稳定后，client2 通过 curl get server 文件&lt;/li&gt;&#xA;&lt;li&gt;可以观察到两种情况（如果无法复现请多试几次，就能复现）&lt;br&gt;&#xA;正常情况：两个 client 速度稳定在30MB/s左右&lt;br&gt;&#xA;降速情况：两个 client 速度降低到3.5MB/s左右&lt;/li&gt;&#xA;&lt;li&gt;关掉client2，观察到client1恢复到7-8MB/s，但是远低于60MB/s的带宽上限&lt;/li&gt;&#xA;&lt;li&gt;降速情况发生之后，client1/2重新通过curl 下载 server文件，就会出现起初网络速度在30-50MB/s，但10s后会降速7-8MB/s的情况，需要重启server才能恢复到60MB/s&lt;/li&gt;&#xA;&lt;/ol&gt;&#xA;&lt;h3 id=&#34;分析&#34;&gt;分析&lt;/h3&gt;&#xA;&lt;ol&gt;&#xA;&lt;li&gt;&#xA;&lt;p&gt;抓包&lt;/p&gt;&#xA;&lt;p&gt;通过tcpdump抓包，获得了完整的降速过程中，server和两个client的网络包的传输情况，pcap文件已上传到&lt;a href=&#34;https://github.com/gongyisheng/playground/tree/main/network/throughput_drop_case&#34;&gt;Github&lt;/a&gt;&lt;/p&gt;&#xA;&lt;p&gt;&lt;img src=&#34;./images/rtt_server_to_client1_serverside.png&#34; alt=&#34;img&#34;&gt;&#xA;&lt;img src=&#34;./images/rtt_server_to_client1_clientside.png&#34; alt=&#34;img&#34;&gt;&#xA;&lt;img src=&#34;./images/rtt_server_to_client2_serverside.png&#34; alt=&#34;img&#34;&gt;&#xA;&lt;img src=&#34;./images/rtt_server_to_client2_clientside.png&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;&#xA;&lt;p&gt;可以观察到：&lt;/p&gt;&#xA;&lt;ol&gt;&#xA;&lt;li&gt;rtt有明显上升，rtt从降速前的小于1ms上升到降速后的50-100ms&lt;/li&gt;&#xA;&lt;li&gt;两边rtt不对等，在降速后关掉client2, server-&amp;gt;client1 tcp stream的rtt在server端和client端差异很大&lt;/li&gt;&#xA;&lt;/ol&gt;&#xA;&lt;/li&gt;&#xA;&lt;li&gt;&#xA;&lt;p&gt;猜测A：bufferbloat&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>Packet capture experiment 2</title>
       <link>https://blog.yellowday.day/packet_capture_experiment_2/</link>
       <pubDate>Sat, 15 Apr 2023 12:00:00 -0700</pubDate>
       <guid>https://blog.yellowday.day/packet_capture_experiment_2/</guid>
