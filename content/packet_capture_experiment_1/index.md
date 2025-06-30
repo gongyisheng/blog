@@ -92,7 +92,7 @@ The goal of packet capture experiment here is to get a better understanding of T
 
 ### Result and Analysis
 
-To simplify, here I’ll only focus on client side packet capture result. For those who are interested in packet capture result on both sides, please refer to the github repo for details.
+To simplify, here I’ll only focus on client side packet capture result. For those who are interested in packet capture result on both sides, please refer to the [github repo](https://github.com/gongyisheng/playground/tree/main/network/experiment) for details.
 
 Result:
 
