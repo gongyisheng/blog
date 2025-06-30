@@ -49,17 +49,17 @@ Everything worked well in the morning until we got monitoring alarm at 12:45 PM 
 <li>
 <p>Redis memory went up for X10 times, finally OOM<br>
 Next, we receive another alarm: <code>&lt;Redis_name&gt; Redis memory usage increase over 30% per hour</code> at 1:00 PM EST. Actually the monitoring dashboard showed that Redis memory went up by X10 times! It raised from 100M to 1GB. It started at 12:39 PM, which is before queue lag is too big warning. The memory usage is stable at 1G to 1.5G at first, but went up gradually and finally OOM 3hrs later.
-<img src="../assets/images/redis_oom_due_to_big_keys/redis-oom-1.jpg" alt="img"></p>
+<img src="./images/redis-oom-1.jpg" alt="img"></p>
 </li>
 <li>
 <p>Client side error: Timeout reading from socket<br>
 I looked up the log of the service and found this error: <code>Timeout reading from socket</code>. We have Redis socketTimeout = 300s, which means that the client doesn’t get message back from Redis after 5min!
-<img src="../assets/images/redis_oom_due_to_big_keys/redis-oom-2.png" alt="img"></p>
+<img src="./images/redis-oom-2.png" alt="img"></p>
 </li>
 <li>
 <p>Network out speed was limited at 300 Mbps<br>
 The network out speed is very stable and limited at 300 Mbps.Before 12:39 PM, the network out speed fluctuated between 300-500 Mbps.
-<img src="../assets/images/redis_oom_due_to_big_keys/redis-oom-3.jpg" alt="img"></p>
+<img src="./images/redis-oom-3.jpg" alt="img"></p>
 </li>
 </ol>
 <h3 id="analysis">Analysis</h3>
@@ -144,9 +144,9 @@ id=2135638 addr=***.***.***.***:***** laddr=***.***.***.***:***** fd=589 name= a
 <li>
 <p>Work with DevOps team<br>
 Confirmed that no speed limit rule set by DevOps team.
-<img src="../assets/images/redis_oom_due_to_big_keys/redis-oom-4.png" alt="img">
+<img src="./images/redis-oom-4.png" alt="img">
 Confirmed that the network speed of instance Redis pod running in hit the limit of AWS EC2 instance we use around 12:39 PM EST by DevOps team<br>
-<img src="../assets/images/redis_oom_due_to_big_keys/redis-oom-5.png" alt="img"></p>
+<img src="./images/redis-oom-5.png" alt="img"></p>
 </li>
 </ol>
 <h3 id="root-cause">Root Cause</h3>
