@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en-us"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+   <meta name="description" content="Observation
+Signal file is widely used in Hadoop ecosystem. If you have experience with MapReduce, you’ll notice that by default MapReduce runtime writes an empty _SUCCESS file to mark successful completion of a job to the output folder. AWS DataPipeline and Databricks also support “file arrival” to trigger a downstream job.
+Question
+Is signal file a good architecture design?
+Can I use _SUCCESS created by MapReduce as signal file to trigger downstream job?">  
+
+  <title>
+    
+      Why signal file is a bad idea
+    
+  </title>
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/" />
+  
+  
+  
+  <link rel="stylesheet" href="/css/main.900100e9dbee2d56c58fac8bb717037cae7e26a9c36c29d2ff587bdd65f0cbbe510b41d81a3bb234919cdfdc7550d786b2fab70c8fc507772d732fe097106d12.css" integrity="sha512-kAEA6dvuLVbFj6yLtxcDfK5&#43;JqnDbCnS/1h73WXwy75RC0HYGjuyNJGc39x1UNeGsvq3DI/FB3ctcy/glxBtEg==" />
+  
+</head>
+<body a="auto">
+        <main class="page-content" aria-label="Content">
+            <div class="w">
+                <div class="post-meta">
+                    <a href="/">..</a>
+
+                    <p>
+                        <time datetime="2023-01-13 12:00:00 -0700 -0700">
+                            2023-01-13
+                        </time>
+                    </p>
+                </div>
+
+<article>
+    <h1>Why signal file is a bad idea</h1>
+
+    
+
+    <h3 id="observation">Observation</h3>
+<p>Signal file is widely used in Hadoop ecosystem. If you have experience with MapReduce, you’ll notice that by default MapReduce runtime writes an empty _SUCCESS file to mark successful completion of a job to the output folder. AWS DataPipeline and Databricks also support “file arrival” to trigger a downstream job.</p>
+<h3 id="question">Question</h3>
+<p>Is signal file a good architecture design?</p>
+<p>Can I use _SUCCESS created by MapReduce as signal file to trigger downstream job?</p>
+<h3 id="discussion">Discussion</h3>
+<p>Generally speaking, signal file is a bad design comparing with direct api call.</p>
+<ol>
+<li>
+<p>Signal file introduce unnecessary dependency to the system.</p>
+<ul>
+<li>signal file: Job A -&gt; signal file -&gt; Job B</li>
+<li>api call: Job A -&gt; Job B
+Signal file introduces one more unnecessary dependency for the system and hurts overall maintainability. Signal file is perferred only when Job A can’t monitor when writing files to disk is complete.</li>
+</ul>
+</li>
+<li>
+<p>Signal file is less standardized, its file format may change<br>
+To make things worse, you put some metadata inside signal file and downstream job has to implement an API to read data from it. This architecture design will be a pain if you have system migration (eg. python2 to python3). You have to solve API compatibility issues every time there’re infrastructure changes.</p>
+</li>
+<li>
+<p>Signal file may be moved, renamed, or deleted<br>
+As long as user has the access to read/write signal file, its state can be mischanged by human errors.</p>
+</li>
+<li>
+<p>Signal file may be created by a different process<br>
+There’ll be race conditions if multiple services can read and write signal files at the same time.</p>
+</li>
+</ol>
+<h3 id="action">Action</h3>
+<p>In January 2022, after our data pipeline migration from AWS EMR to Databricks, we eventually decided to replace ALL of the signal file architecture design with databricks api call to trigger downstream jobs. What I learned is that signal file is not a good idea for triggering another job comparing with direct api call.</p>
+
+</article>
+
+            </div>
+        </main>
+    </body></html>
