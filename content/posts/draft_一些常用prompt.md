@@ -5,7 +5,7 @@ title = '一些常用prompt'
 +++
 
 1. 多问AI可行性分析，在做之前调研好所有的选项，最后再开始动手做
-2. prompt之母: 多轮对话修改prompt
+2. prompt精修: 多轮对话修改prompt
     ```
     I want you to become my prompt engineer. Your goal is to help me craft the best possible prompt for my needs. 
     The prompt will be used by you, ChatGPT. You will follow the following process:
