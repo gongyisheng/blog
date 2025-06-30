@@ -6,8 +6,15 @@
     <description>Recent content on Yisheng&#39;s Blog</description>
     <generator>Hugo</generator>
     <language>en-us</language>
-    <lastBuildDate>Fri, 10 Feb 2023 12:00:00 -0700</lastBuildDate>
+    <lastBuildDate>Thu, 16 Feb 2023 12:00:00 -0700</lastBuildDate>
     <atom:link href="https://blog.yellowday.day/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Redis OOM due to big keys</title>
+      <link>https://blog.yellowday.day/redis_oom_due_to_big_keys/</link>
+      <pubDate>Thu, 16 Feb 2023 12:00:00 -0700</pubDate>
+      <guid>https://blog.yellowday.day/redis_oom_due_to_big_keys/</guid>
+      <description>&lt;h3 id=&#34;observation&#34;&gt;Observation&lt;/h3&gt;&#xA;&lt;ol&gt;&#xA;&lt;li&gt;&#xA;&lt;p&gt;Queue client performance went down&lt;br&gt;&#xA;Everything worked well in the morning until we got monitoring alarm at 12:45 PM EST: &lt;code&gt;&amp;lt;topic_name&amp;gt; Queue lag is too big&lt;/code&gt;. The issue happened in a service which is responsible for consuming message from message queue, processing message and writing it to database. The service also uses Redis to cache some objects which can be reused every time it processes the message. Auto-scaling rule is applied to the service so there’ll be tens to hundreds of pods running under heavy workload. We observed that the consumer speed went down by 50%, causing messages to be backlogged in the queue.&lt;/p&gt;</description>
+    </item>
     <item>
       <title>MySQL connection deadlock</title>
       <link>https://blog.yellowday.day/mysql_connection_deadlock/</link>

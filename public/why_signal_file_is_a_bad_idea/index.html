@@ -57,15 +57,15 @@ Signal file introduces one more unnecessary dependency for the system and hurts 
 </ul>
 </li>
 <li>
-<p>Signal file is less standardized, its file format may change
+<p>Signal file is less standardized, its file format may change<br>
 To make things worse, you put some metadata inside signal file and downstream job has to implement an API to read data from it. This architecture design will be a pain if you have system migration (eg. python2 to python3). You have to solve API compatibility issues every time there’re infrastructure changes.</p>
 </li>
 <li>
-<p>Signal file may be moved, renamed, or deleted
+<p>Signal file may be moved, renamed, or deleted<br>
 As long as user has the access to read/write signal file, its state can be mischanged by human errors.</p>
 </li>
 <li>
-<p>Signal file may be created by a different process
+<p>Signal file may be created by a different process<br>
 There’ll be race conditions if multiple services can read and write signal files at the same time.</p>
 </li>
 </ol>
