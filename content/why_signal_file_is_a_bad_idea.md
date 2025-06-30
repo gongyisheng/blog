@@ -4,15 +4,19 @@ draft = false
 title = 'Why signal file is a bad idea'
 +++
 ### Observation
+
 Signal file is widely used in Hadoop ecosystem. If you have experience with MapReduce, you’ll notice that by default MapReduce runtime writes an empty _SUCCESS file to mark successful completion of a job to the output folder. AWS DataPipeline and Databricks also support “file arrival” to trigger a downstream job.
 
 ### Question
+
 Is signal file a good architecture design?
 
 Can I use _SUCCESS created by MapReduce as signal file to trigger downstream job?
 
 ### Discussion
+
 Generally speaking, signal file is a bad design comparing with direct api call.
+
 1. Signal file introduce unnecessary dependency to the system.  
     - signal file: Job A -> signal file -> Job B
     - api call: Job A -> Job B
@@ -28,4 +32,5 @@ Generally speaking, signal file is a bad design comparing with direct api call.
     There’ll be race conditions if multiple services can read and write signal files at the same time.
 
 ### Action
+
 In January 2022, after our data pipeline migration from AWS EMR to Databricks, we eventually decided to replace ALL of the signal file architecture design with databricks api call to trigger downstream jobs. What I learned is that signal file is not a good idea for triggering another job comparing with direct api call. 

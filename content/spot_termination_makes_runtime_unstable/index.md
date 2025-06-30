@@ -4,14 +4,19 @@ draft = false
 title = 'Spot termination makes runtime unstable'
 +++
 ### Observation
+
 Spark Job runtime is not stable
+
 ![img](./images/spot-instance-1.png)
+
 As what can see from the screenshot, the pipeline (spark job) runtime is not quite stable. However, the pipeline deals with almost fixed amount data everyday, the runtime should not be so quite unstable like this.
 
 Besides, the pipeline runtime is quite stable at around 15min before migration to databricks.
 
 ### Analysis
+
 1. Spark driver log
+
     ```
     23/03/16 19:04:26 INFO StandaloneAppClient$ClientEndpoint: Executor updated: app-20230316185728-0000/2 is now EXITED (Worker shutting down)
     23/03/16 19:04:26 WARN DLTDebugger: Failed to talk to RPC endpoint: dlt-debugger
@@ -69,12 +74,15 @@ Besides, the pipeline runtime is quite stable at around 15min before migration t
     23/03/16 19:04:26 INFO StandaloneSchedulerBackend: Executor app-20230316185728-0000/4 removed: java.lang.IllegalStateException: Shutdown hooks cannot be modified during shutdown.
     ```
     Spark log4j-active log shows that there’s excutor exit. But no reason for that.
+
 2. Spark cluster event log  
+
 There’re spot instance lost event in the cluster event log. The reason is spot termination.
+
 ![img](./images/spot-instance-2.png)
 
-
 3. Discuss with team  
+
     However, after communicating with my colleague, what I’ve learned is:
 
     - Spot instance can really save EC2 cost a lot. Use the `i3en.2xlarge` instance we use as worker node as an example, spot instance price is 60% lower than on-demand.
@@ -93,7 +101,9 @@ There’re spot instance lost event in the cluster event log. The reason is spot
     - Besides, be careful if you’re doing performance tuning experiments! Spot termination will cause baseline drift and drive you to the wrong conclusion.
 
 ### Learned
-1. Take the impact of spot termination into consideration. Especially when your organization turn it on by default but you’re not aware of it. If you want to build pipelines on spot instances, you have to take its impact into consideration.
+
+1. Take the impact of spot termination into consideration. Especially when your organization turn it on by default but you’re not aware of it. If you want to build pipelines on spot instances, you have to take its impact into consideration.  
+
 2. Spot instance can really save a lot of cost, whether to use it or not depends on your use case. If you have decided to use it, choose the right spot instance type with lowest termination rate.
 
 ### Reference

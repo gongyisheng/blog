@@ -4,29 +4,38 @@ draft = false
 title = 'Redis OOM due to big keys'
 +++
 ### Observation
+
 1. Queue client performance went down  
+
     Everything worked well in the morning until we got monitoring alarm at 12:45 PM EST: `<topic_name> Queue lag is too big`. The issue happened in a service which is responsible for consuming message from message queue, processing message and writing it to database. The service also uses Redis to cache some objects which can be reused every time it processes the message. Auto-scaling rule is applied to the service so there’ll be tens to hundreds of pods running under heavy workload. We observed that the consumer speed went down by 50%, causing messages to be backlogged in the queue.
 
 2. Redis memory went up for X10 times, finally OOM  
+
     Next, we receive another alarm: `<Redis_name> Redis memory usage increase over 30% per hour` at 1:00 PM EST. Actually the monitoring dashboard showed that Redis memory went up by X10 times! It raised from 100M to 1GB. It started at 12:39 PM, which is before queue lag is too big warning. The memory usage is stable at 1G to 1.5G at first, but went up gradually and finally OOM 3hrs later.
     ![img](./images/redis-oom-1.jpg)
 
 3. Client side error: Timeout reading from socket  
+
     I looked up the log of the service and found this error: `Timeout reading from socket`. We have Redis socketTimeout = 300s, which means that the client doesn’t get message back from Redis after 5min!
     ![img](./images/redis-oom-2.png)
 
 4. Network out speed was limited at 300 Mbps  
+
     The network out speed is very stable and limited at 300 Mbps.Before 12:39 PM, the network out speed fluctuated between 300-500 Mbps.
     ![img](./images/redis-oom-3.jpg)
 
 ### Analysis
+
 1. Which line of code throw out the error  
+
     Almost every line of code to get key from redis throws this error, It’s not caused by a specific line of code
 
 2. redis-cli, SLOWLOG GET  
+
     There’s timeout error, so it worths to take a look at slowlog. I saw there were some keys that took about 10s to load, but it happened long before 12:39 PM EST. Nothing suspecious was found.
 
 3. redis-cli, MEMORY STATS  
+
     Since I can’t get any information to slove the problem from performance downgrade and Timeout error, I have to switch to another clue to investigate: Redis memory increase. I use MEMORY STATS to see which causes memory usage to increase.
     ```
     MEMORY STATS
@@ -89,6 +98,7 @@ title = 'Redis OOM due to big keys'
     The result showed that clients.normal is too big (about 1G), dataset.percentage is only 14%. The problem is not caused by a burst of newly added data, but something with Redis client overhead.
 
 4. redis-cli, CLIENT LIST  
+
     Okay, we know that there’s problems with redis client overhead. So which client overhead cause the problem? I use CLIENT LIST to get the information and statistics about the client connections. The result showed that there were too many clients with tot-mem=7M/5M, oll=1.
     ```
     id=2136697 addr=***.***.***.***:***** laddr=***.***.***.***:***** fd=508 name= age=3034 idle=2 flags=N db=0 sub=0 psub=0 multi=-1 qbuf=0 qbuf-free=0 argv-mem=0 obl=0 oll=0 omem=0 tot-mem=20504 events=r cmd=get user=default redir=-1
@@ -98,16 +108,20 @@ title = 'Redis OOM due to big keys'
     It looked messages were backloged in the out buffer to be sent out. And we know that the network out speed is limited at 300 MB, is there anything limits the network speed?
 
 5. Work with DevOps team  
+
     Confirmed that no speed limit rule set by DevOps team. 
     ![img](./images/redis-oom-4.png) 
+
     Confirmed that the network speed of instance Redis pod running in hit the limit of AWS EC2 instance we use around 12:39 PM EST by DevOps team  
     ![img](./images/redis-oom-5.png)
 
 ### Root Cause
 1. Redis big key  
+
     There’re several big keys stored in Redis. Each one is about 5 – 7Mb. Imagine if there’re 100 pods request the same key in a second, it requires 500-700 Mbps network brandwith to work well.  
 
 2. Then hit network speed limit of AWS instance we use.  
+
     Network output of redis pod is limited at 300 Mbps when the instance network hit the upperbound (4750 Mbps).
 
 3. Data to be sent out is backlogged in the buffer, causing memory to increase, finally OOM   
@@ -115,11 +129,15 @@ title = 'Redis OOM due to big keys'
     The data to be sent out line up in the network output buffer, which can be read from clients.normal and takes more and more memory, finally OOM.
 
 ### Solution
+
 Avoid requesting Redis big key. Since this key is not frequently updated and has a loose consistency requirement, we use memory cache instead.
 
 ### Learned
+
 1. Avoid Redis big key.   
+
     Don’t store big keys in Redis which may be frequently requested! If you have to store big key in Redis, avoid frequent request for big key and use MGET to improve the performance. Loading big key frequently can cause a lot of problems (Redis cpu usage too high, get command takes too much time, and hits network speed limit)  
 
 2. Everything has a limit.   
+
     Estimate the qps and network I/O that your service will bring to Redis (and other external services) before use them.  
