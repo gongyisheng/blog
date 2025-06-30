@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en-us"><head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+   <meta name="description" content="Observation
+Signal file is widely used in Hadoop ecosystem. If you have experience with MapReduce, you’ll notice that by default MapReduce runtime writes an empty _SUCCESS file to mark successful completion of a job to the output folder. AWS DataPipeline and Databricks also support “file arrival” to trigger a downstream job.
+Question
+Is signal file a good architecture design?
+Can I use _SUCCESS created by MapReduce as signal file to trigger downstream job?">  
+
+  <title>
+    
+      Why signal file is a bad idea
+    
+  </title>
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/" />
+  
+  
+  
+  <link rel="stylesheet" href="/css/main.51652302d3a998bf7887aed5c2cf89141bbebdf45a2c8f87b0717a3cf4f51c4e53c694c328fb1de78c3a625a1c01f80745bf1f2f42c040647a245cbbb6c2d1d7.css" integrity="sha512-UWUjAtOpmL94h67Vws&#43;JFBu&#43;vfRaLI&#43;HsHF6PPT1HE5TxpTDKPsd54w6YlocAfgHRb8fL0LAQGR6JFy7tsLR1w==" />
+  
+</head>
+<body a="auto">
+        <main class="page-content" aria-label="Content">
+            <div class="w">
+<a href="/">..</a>
+
+
+<article>
+    <p class="post-meta">
+        <time datetime="2023-01-13 12:00:00 -0700 -0700">
+            2023-01-13
+        </time>
+    </p>
+
+    <h1>Why signal file is a bad idea</h1>
+
+    
+
+    <h3 id="observation">Observation</h3>
+<p>Signal file is widely used in Hadoop ecosystem. If you have experience with MapReduce, you’ll notice that by default MapReduce runtime writes an empty _SUCCESS file to mark successful completion of a job to the output folder. AWS DataPipeline and Databricks also support “file arrival” to trigger a downstream job.</p>
+<h3 id="question">Question</h3>
+<p>Is signal file a good architecture design?</p>
+<p>Can I use _SUCCESS created by MapReduce as signal file to trigger downstream job?</p>
+<h3 id="discussion">Discussion</h3>
+<p>Generally speaking, signal file is a bad design comparing with direct api call.</p>
+<ol>
+<li>
+<p>Signal file introduce unnecessary dependency to the system.</p>
+<ul>
+<li>signal file: Job A -&gt; signal file -&gt; Job B</li>
+<li>api call: Job A -&gt; Job B
+Signal file introduces one more unnecessary dependency for the system and hurts overall maintainability. Signal file is perferred only when Job A can’t monitor when writing files to disk is complete.</li>
+</ul>
+</li>
+<li>
+<p>Signal file is less standardized, its file format may change
+To make things worse, you put some metadata inside signal file and downstream job has to implement an API to read data from it. This architecture design will be a pain if you have system migration (eg. python2 to python3). You have to solve API compatibility issues every time there’re infrastructure changes.</p>
+</li>
+<li>
+<p>Signal file may be moved, renamed, or deleted
+As long as user has the access to read/write signal file, its state can be mischanged by human errors.</p>
+</li>
+<li>
+<p>Signal file may be created by a different process
+There’ll be race conditions if multiple services can read and write signal files at the same time.</p>
+</li>
+</ol>
+<h3 id="action">Action</h3>
+<p>In January 2022, after our data pipeline migration from AWS EMR to Databricks, we eventually decided to replace ALL of the signal file architecture design with databricks api call to trigger downstream jobs. What I learned is that signal file is not a good idea for triggering another job comparing with direct api call.</p>
+
+</article>
+
+                
+    
+    
+        A blog since 2023 | Made by <a href="https://gohugo.io/">hugo</a> | Host on <a href="https://www.cloudflare.com/">cloudflare</a>
+    
+
+
+            </div>
+        </main>
+    </body>
+</html>

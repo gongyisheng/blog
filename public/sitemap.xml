@@ -2,14 +2,17 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>http://localhost:1313/posts/</loc>
+    <loc>https://blog.yellowday.day/</loc>
     <lastmod>2024-08-18T13:34:54+02:00</lastmod>
   </url><url>
-    <loc>http://localhost:1313/</loc>
-    <lastmod>2022-08-25T21:30:04+08:00</lastmod>
+    <loc>https://blog.yellowday.day/posts/</loc>
+    <lastmod>2024-08-18T13:34:54+02:00</lastmod>
   </url><url>
-    <loc>http://localhost:1313/categories/</loc>
+    <loc>https://blog.yellowday.day/why_signal_file_is_a_bad_idea/</loc>
+    <lastmod>2023-01-13T12:00:00-07:00</lastmod>
   </url><url>
-    <loc>http://localhost:1313/tags/</loc>
+    <loc>https://blog.yellowday.day/categories/</loc>
+  </url><url>
+    <loc>https://blog.yellowday.day/tags/</loc>
   </url>
 </urlset>
