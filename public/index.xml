@@ -6,8 +6,15 @@
     <description>Recent content on Yisheng&#39;s Blog</description>
     <generator>Hugo</generator>
     <language>en-us</language>
-    <lastBuildDate>Tue, 11 Apr 2023 12:00:00 -0700</lastBuildDate>
+    <lastBuildDate>Sat, 15 Apr 2023 12:00:00 -0700</lastBuildDate>
     <atom:link href="https://blog.yellowday.day/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Packet capture experiment 1</title>
+      <link>https://blog.yellowday.day/packet_capture_experiment_2/</link>
+      <pubDate>Sat, 15 Apr 2023 12:00:00 -0700</pubDate>
+      <guid>https://blog.yellowday.day/packet_capture_experiment_2/</guid>
+      <description>&lt;h2 id=&#34;sendreceive-buffer&#34;&gt;send/receive buffer&lt;/h2&gt;&#xA;&lt;h3 id=&#34;goal&#34;&gt;Goal&lt;/h3&gt;&#xA;&lt;p&gt;Get a better understanding of how send/receive buffer size may affect the network rtt and throughput. Usually send/receive buffer size is managed by kernal and application should not hardcode these values. However, real world cases are more rare and complicated. Inapporiate buffer size may be the root case of some network issues. Rare but possible.&lt;/p&gt;&#xA;&lt;h3 id=&#34;method&#34;&gt;Method&lt;/h3&gt;&#xA;&lt;ol&gt;&#xA;&lt;li&gt;&#xA;&lt;p&gt;Instance&lt;/p&gt;&#xA;&lt;p&gt;Instance provider: AWS&lt;br&gt;&#xA;Instance type: t2.micro, 1vCPU, 1GiB memory, Low to Moderate network&lt;br&gt;&#xA;Region: us-east-1b&lt;br&gt;&#xA;OS: Amazon Linux 2023 AMI&lt;br&gt;&#xA;Python: 3.9&lt;/p&gt;</description>
+    </item>
     <item>
       <title>Packet capture experiment 1</title>
       <link>https://blog.yellowday.day/packet_capture_experiment_1/</link>
