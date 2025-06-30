@@ -6,8 +6,15 @@
     <description>Recent content on Yisheng&#39;s Blog</description>
     <generator>Hugo</generator>
     <language>en-us</language>
-    <lastBuildDate>Thu, 16 Feb 2023 12:00:00 -0700</lastBuildDate>
+    <lastBuildDate>Wed, 15 Mar 2023 12:00:00 -0700</lastBuildDate>
     <atom:link href="https://blog.yellowday.day/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Broadcast variable cause OOM</title>
+      <link>https://blog.yellowday.day/broadcast_variable_case_oom/</link>
+      <pubDate>Wed, 15 Mar 2023 12:00:00 -0700</pubDate>
+      <guid>https://blog.yellowday.day/broadcast_variable_case_oom/</guid>
+      <description>&lt;h3 id=&#34;observation&#34;&gt;Observation&lt;/h3&gt;&#xA;&lt;ol&gt;&#xA;&lt;li&gt;&#xA;&lt;p&gt;Spark cluster master node OOM&lt;br&gt;&#xA;Master node shutdown due to OOM. Error log:&lt;/p&gt;&#xA;&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;INFO Data stored in hdfs:///XXXX&#xA;INFO XXXXX updated&#xA;INFO Data has XXXXX records&#xA;INFO Data stored in hdfs:///XXXX&#xA;INFO XXXXX updated&#xA;#&#xA;# java.lang.OutOfMemoryError: Java heap space&#xA;# -XX:OnOutOfMemoryError=&amp;#34;kill -9 %p&amp;#34;&#xA;#   Executing /bin/sh -c &amp;#34;kill -9 *****&amp;#34;...&#xA;&lt;/code&gt;&lt;/pre&gt;&lt;/li&gt;&#xA;&lt;li&gt;&#xA;&lt;p&gt;Spark cluster worker node shutdown&lt;br&gt;&#xA;Worker nodes worked well until driver shutdown. Error log:&lt;/p&gt;&#xA;&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;ERROR YarnCoarseGrainedExecutorBackend: Executor self-exiting due to : Driver ip-***-***-***-***.ec2.internal:***** disassociated! Shutting down.&#xA;INFO MemoryStore: MemoryStore cleared&#xA;INFO BlockManager: BlockManager stopped&#xA;ERROR CoarseGrainedExecutorBackend: RECEIVED SIGNAL TERM&#xA;&lt;/code&gt;&lt;/pre&gt;&lt;/li&gt;&#xA;&lt;/ol&gt;&#xA;&lt;h3 id=&#34;analysis&#34;&gt;Analysis&lt;/h3&gt;&#xA;&lt;ol&gt;&#xA;&lt;li&gt;&#xA;&lt;p&gt;Look up driver log&lt;br&gt;&#xA;This is a driver OOM problem. We need to figure out what caused the driver OOM.&lt;/p&gt;</description>
+    </item>
     <item>
       <title>Redis OOM due to big keys</title>
       <link>https://blog.yellowday.day/redis_oom_due_to_big_keys/</link>

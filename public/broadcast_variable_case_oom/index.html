@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en-us"><head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+   <meta name="description" content="Observation
+
+
+Spark cluster master node OOM
+Master node shutdown due to OOM. Error log:
+INFO Data stored in hdfs:///XXXX
+INFO XXXXX updated
+INFO Data has XXXXX records
+INFO Data stored in hdfs:///XXXX
+INFO XXXXX updated
+#
+# java.lang.OutOfMemoryError: Java heap space
+# -XX:OnOutOfMemoryError=&#34;kill -9 %p&#34;
+#   Executing /bin/sh -c &#34;kill -9 *****&#34;...
+
+
+Spark cluster worker node shutdown
+Worker nodes worked well until driver shutdown. Error log:
+ERROR YarnCoarseGrainedExecutorBackend: Executor self-exiting due to : Driver ip-***-***-***-***.ec2.internal:***** disassociated! Shutting down.
+INFO MemoryStore: MemoryStore cleared
+INFO BlockManager: BlockManager stopped
+ERROR CoarseGrainedExecutorBackend: RECEIVED SIGNAL TERM
+
+
+Analysis
+
+
+Look up driver log
+This is a driver OOM problem. We need to figure out what caused the driver OOM.">  
+
+  <title>
+    
+      Broadcast variable cause OOM
+    
+  </title>
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/" />
+  
+  
+  
+  <link rel="stylesheet" href="/css/main.51652302d3a998bf7887aed5c2cf89141bbebdf45a2c8f87b0717a3cf4f51c4e53c694c328fb1de78c3a625a1c01f80745bf1f2f42c040647a245cbbb6c2d1d7.css" integrity="sha512-UWUjAtOpmL94h67Vws&#43;JFBu&#43;vfRaLI&#43;HsHF6PPT1HE5TxpTDKPsd54w6YlocAfgHRb8fL0LAQGR6JFy7tsLR1w==" />
+  
+</head>
+<body a="auto">
+        <main class="page-content" aria-label="Content">
+            <div class="w">
+<a href="/">..</a>
+
+
+<article>
+    <p class="post-meta">
+        <time datetime="2023-03-15 12:00:00 -0700 PDT">
+            2023-03-15
+        </time>
+    </p>
+
+    <h1>Broadcast variable cause OOM</h1>
+
+    
+
+    <h3 id="observation">Observation</h3>
+<ol>
+<li>
+<p>Spark cluster master node OOM<br>
+Master node shutdown due to OOM. Error log:</p>
+<pre tabindex="0"><code>INFO Data stored in hdfs:///XXXX
+INFO XXXXX updated
+INFO Data has XXXXX records
+INFO Data stored in hdfs:///XXXX
+INFO XXXXX updated
+#
+# java.lang.OutOfMemoryError: Java heap space
+# -XX:OnOutOfMemoryError=&#34;kill -9 %p&#34;
+#   Executing /bin/sh -c &#34;kill -9 *****&#34;...
+</code></pre></li>
+<li>
+<p>Spark cluster worker node shutdown<br>
+Worker nodes worked well until driver shutdown. Error log:</p>
+<pre tabindex="0"><code>ERROR YarnCoarseGrainedExecutorBackend: Executor self-exiting due to : Driver ip-***-***-***-***.ec2.internal:***** disassociated! Shutting down.
+INFO MemoryStore: MemoryStore cleared
+INFO BlockManager: BlockManager stopped
+ERROR CoarseGrainedExecutorBackend: RECEIVED SIGNAL TERM
+</code></pre></li>
+</ol>
+<h3 id="analysis">Analysis</h3>
+<ol>
+<li>
+<p>Look up driver log<br>
+This is a driver OOM problem. We need to figure out what caused the driver OOM.</p>
+<pre tabindex="0"><code>INFO UnifiedMemoryManager: Will not store broadcast_1159 as the required space (6290408084 bytes) exceeds our memory limit (4923378892 bytes)
+WARN MemoryStore: Not enough space to cache broadcast_1159 in memory! (computed 3.9 GiB so far)
+INFO MemoryStore: Memory use = 2.4 GiB (blocks) + 1024.0 KiB (scratch space shared across 1 tasks(s)) = 2.4 GiB. Storage limit = 4.6 GiB.
+WARN BlockManager: Persisting block broadcast_1159 to disk instead.
+</code></pre><p>The size of broadcast_1159 rdd is around 6G, however the free driver memory is only 4.58G, causing the error.</p>
+</li>
+<li>
+<p>Look up the code<br>
+There’s a broadcast variable whose size is related to dafaframe row count during overwriting the out-of-date data:</p>
+<pre tabindex="0"><code>marker = update_df.select(update_df.&lt;id&gt;.alias(&#39;purge_key&#39;))
+joined = base.join(sfunc.broadcast(marker), base.&lt;id&gt; == marker.purge_key, &#39;left_outer&#39;)
+purged = joined.where(joined.purge_key.isNull()).drop(&#39;purge_key&#39;)
+</code></pre><p>It’s kind of merge upsert process: Look up the id from dataframe. If id exists, update the row of data with new one. If id doesn’t exist, insert a new row of data</p>
+</li>
+</ol>
+<h3 id="learned">Learned</h3>
+<ol>
+<li>Be careful with the size of broadcast variable, especially when their size is growing or fluctuating. Make sure that you have monitoring for the size and it’ll not exceed the driver momory limit.</li>
+<li>Merge upsert can be better supported by delta lake. Try delta lake if necessary. Demo code:</li>
+</ol>
+<pre tabindex="0"><code>base.alias(&#39;base&#39;) \
+    .merge(updates.alias(&#39;updates&#39;), &#39;base.&lt;key&gt; ==updates.&lt;key&gt;&#39;) \
+    .whenMatchedUpdateAll() \
+    .whenNotMatchedInsertAll() \
+    .execute()
+</code></pre>
+</article>
+
+                
+    
+    
+        A blog since 2023 | Made by <a href="https://gohugo.io/">hugo</a> | Host on <a href="https://www.cloudflare.com/">cloudflare</a>
+    
+
+
+            </div>
+        </main>
+    </body>
+</html>
