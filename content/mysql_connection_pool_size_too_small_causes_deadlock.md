@@ -1,6 +1,6 @@
 +++
-date = '2025-02-10T12:00:00-07:00'
-draft = true
+date = '2023-02-10T12:00:00-07:00'
+draft = false
 title = 'MySQL connection pool size too small causes deadlock'
 +++
 ### Observation
