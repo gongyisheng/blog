@@ -9,10 +9,10 @@
     <lastBuildDate>Fri, 10 Feb 2023 12:00:00 -0700</lastBuildDate>
     <atom:link href="https://blog.yellowday.day/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>MySQL connection pool size too small causes deadlock</title>
-      <link>https://blog.yellowday.day/mysql_connection_pool_size_too_small_causes_deadlock/</link>
+      <title>MySQL connection deadlock</title>
+      <link>https://blog.yellowday.day/mysql_connection_deadlock/</link>
       <pubDate>Fri, 10 Feb 2023 12:00:00 -0700</pubDate>
-      <guid>https://blog.yellowday.day/mysql_connection_pool_size_too_small_causes_deadlock/</guid>
+      <guid>https://blog.yellowday.day/mysql_connection_deadlock/</guid>
       <description>&lt;h3 id=&#34;observation&#34;&gt;Observation&lt;/h3&gt;&#xA;&lt;h4 id=&#34;cronjob-is-taking-more-than-1h-to-complete&#34;&gt;CronJob is taking more than 1h to complete&lt;/h4&gt;&#xA;&lt;p&gt;My colleagues told me that one of the cron job stuck in the middle after a random day. They received the warning: CronJob is taking more than 1h to complete. And the pod kept stucking there after a day, which is abnormal. However, another cron job which almost uses the same code works well. No database failure was reported during the period of time.&lt;/p&gt;</description>
     </item>
     <item>

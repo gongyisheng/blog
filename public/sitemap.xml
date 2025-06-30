@@ -8,7 +8,7 @@
     <loc>https://blog.yellowday.day/posts/</loc>
     <lastmod>2024-08-18T13:34:54+02:00</lastmod>
   </url><url>
-    <loc>https://blog.yellowday.day/mysql_connection_pool_size_too_small_causes_deadlock/</loc>
+    <loc>https://blog.yellowday.day/mysql_connection_deadlock/</loc>
     <lastmod>2023-02-10T12:00:00-07:00</lastmod>
   </url><url>
     <loc>https://blog.yellowday.day/why_signal_file_is_a_bad_idea/</loc>

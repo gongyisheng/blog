@@ -1,7 +1,7 @@
 +++
 date = '2023-02-10T12:00:00-07:00'
 draft = false
-title = 'MySQL connection pool size too small causes deadlock'
+title = 'MySQL connection deadlock'
 +++
 ### Observation
 #### CronJob is taking more than 1h to complete
