@@ -1,0 +1,23 @@
+[[items]]
+name = "Home"
+url = "/"
+
+[[items]]
+name = "Posts"
+url = "/posts/"
+
+[[items]]
+name = "Categories"
+url = "/categories/"
+
+[[items]]
+name = "Tags"
+url = "/tags/"
+
+[[items]]
+name = "About Me"
+url = "/about_me/"
+
+[[items]]
+name = "Links"
+url = "/links/"

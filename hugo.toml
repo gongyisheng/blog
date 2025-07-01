@@ -10,4 +10,11 @@ theme = 'nostyle'
 [params]
   favicon = "/favicon.png"
   [params.theme_config]
-    back_home_text = "home"
+    back_home_text = ".."
+  [params.taxonomy]
+    showCount = true
+    showDescription = true
+
+[taxonomies]
+  category = "categories"
+  tag = "tags"

@@ -1,0 +1,5 @@
+<nav class="site-nav">
+    {{ range $index, $item := .Site.Data.navigation.items }}
+        <a href="{{ $item.url | relURL }}">{{ $item.name }}</a>{{ if ne $index (sub (len $.Site.Data.navigation.items) 1) }} | {{ end }}
+    {{ end }}
+</nav>
