@@ -166,7 +166,7 @@ Valkey/Redis, 多核
 另外注意到Valkey的LRANGE性能明显不如Redis，其本身也是一个slow command，使用需要注意。Redis 7.2.4之后的新特性如vector storage, 
 
 ### Reference
-- [Valkey multithreading - github issue](https://github.com/orgs/valkey-io/discussions/1019)
+- [Valkey multithreading - github discussion](https://github.com/orgs/valkey-io/discussions/1019)
 - [Unlock 1m rps - part1](https://valkey.io/blog/unlock-one-million-rps/)
 - [Unlock 1m rps - part2](https://valkey.io/blog/unlock-one-million-rps-part2/)
 - [RDMA official document](https://valkey.io/topics/RDMA/)
