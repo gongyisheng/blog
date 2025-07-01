@@ -8,5 +8,6 @@ theme = 'nostyle'
     dir = ':cacheDir/images'
 
 [params]
+  favicon = "/favicon.png"
   [params.theme_config]
     back_home_text = "home"
