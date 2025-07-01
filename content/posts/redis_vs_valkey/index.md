@@ -163,7 +163,10 @@ Valkey/Redis, 多核
 ### Conclusion
 从rps/latency指标来看，大多数常用指令（GET SET L/RPUSH L/RPOP）单核性能大差不差，多核性能提升巨大，主要提升都由valkey独有的io-thread架构带来，高并发场景会有更好的支持。  
 
-另外注意到Valkey的LRANGE性能明显不如Redis，其本身也是一个slow command，使用需要注意。Redis 7.2.4之后的新特性如vector storage, 
+另外注意到Valkey的LRANGE性能明显不如Redis，其本身也是一个slow command，使用需要注意。  
+
+如没有使用Redis 7.2.4 后新版本 feature 的需求，可以推荐从Redis无痛切换到Valkey。
+
 
 ### Reference
 - [Valkey multithreading - github discussion](https://github.com/orgs/valkey-io/discussions/1019)
