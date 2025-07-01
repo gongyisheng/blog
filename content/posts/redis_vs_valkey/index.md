@@ -1,6 +1,6 @@
 +++
 date = '2025-06-30T12:00:00-07:00'
-draft = true
+draft = false
 title = 'Redis vs Valkey'
 +++
 ### Redis vs Valkey
@@ -171,3 +171,4 @@ Valkey/Redis, 多核
 - [Unlock 1m rps - part2](https://valkey.io/blog/unlock-one-million-rps-part2/)
 - [RDMA official document](https://valkey.io/topics/RDMA/)
 - [RDMA github pull request](https://github.com/valkey-io/valkey/pull/477#issuecomment-2119785640)
+- [Valkey vs Redis benchmark](https://www.youtube.com/watch?v=9hDvWVJtljE)
