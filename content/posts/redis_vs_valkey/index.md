@@ -5,7 +5,11 @@ title = 'Redis vs Valkey'
 +++
 ### Redis vs Valkey
 ### Background
-过去一年各大云服务厂商在Redis换license之后，力推使用Valkey代替Redis作为kv内存数据库的使用方案。Valkey作为Redis 7.2.4 fork，不仅兼容redis各个语言的client库，也解决了Redis目前存在的单线程性能瓶颈和内存占用问题，不禁好奇其性能有多大提升，周末找了个时间进行了性能benchmark。
+过去一年各大云服务厂商在Redis换license之后，力推使用Valkey代替Redis作为kv内存数据库的使用方案。Valkey作为Redis 7.2.4 fork，不仅兼容redis各个语言的client库，也解决了Redis目前存在的单线程性能瓶颈和内存占用问题，不禁好奇其性能有多大提升，周末找了个时间进行了性能benchmark。  
+
+已有youtube博主进行过benchmark，但由于方法不同结果仅供参考，可以与本文结果进行互相比较
+
+{{< youtube 9hDvWVJtljE >}}
 
 关于Valkey相较于Redis的改进，主要有两个，一个是io-thread, 另一个是数据结构内存优化, 可以参见以下两篇blog post:
 
