@@ -6,3 +6,25 @@ theme = 'nostyle'
 [caches]
   [caches.images]
     dir = ':cacheDir/images'
+
+# Navigation menu
+[menu]
+  [[menu.main]]
+    name = "Posts"
+    url = "/posts/"
+    weight = 10
+
+  [[menu.main]]
+    name = "Categories"
+    url = "/categories/"
+    weight = 20
+
+  [[menu.main]]
+    name = "About Me"
+    url = "/about/"
+    weight = 30
+
+  [[menu.main]]
+    name = "Links"
+    url = "/links/"
+    weight = 40

@@ -18,3 +18,4 @@ title = '一些常用prompt'
     the prompt in the Revised prompt section until I say we are done.
     ```
 3. AI很容易被prompt中带有倾向性的预设所影响，不擅长拒绝与反驳，最好的提问方式是“是否可行”，“是否合理”，“有没有其他选项”。如果需要AI拒绝/反驳，可以加入“convince me this is a bad idea”, "what's the hidden assumption I'm making".
+4. Vibe coding, 有两种选择，一种是不需要长期维护的项目，那么短时间生成大量代码，面向测试/结果编程是可行的。另一种是需要长期维护的项目，那么最好能理解AI每一次的改动，牺牲速度换质量（这点claude code比较好，交互式，每次改动都需要人工确认，可以追问对代码进行解释）
