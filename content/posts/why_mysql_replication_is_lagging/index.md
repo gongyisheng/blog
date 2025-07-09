@@ -1,8 +1,10 @@
-+++
-date = '2024-04-09T12:00:00-07:00'
-draft = false
-title = 'Why MySQL replication is lagging'
-+++
+---
+date: '2024-04-09T12:00:00-07:00'
+draft: false
+title: 'Why MySQL replication is lagging'
+tags: ["Database", "MySQL", "Master-Slave Replication", "Packet Capture", "Incident"]
+categories: ["Database"]
+---
 ### Background
 
 Our team planned to upgrade one of our MySQL instance from 8.0.28 to 8.0.36 through AWS RDS blue/green deployment. The whole process includes 4 steps:

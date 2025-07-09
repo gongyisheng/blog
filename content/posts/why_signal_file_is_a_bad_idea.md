@@ -1,8 +1,10 @@
-+++
-date = '2023-01-13T12:00:00-07:00'
-draft = false
-title = 'Why signal file is a bad idea'
-+++
+---
+date: '2023-01-13T12:00:00-07:00'
+draft: false
+title: 'Why signal file is a bad idea'
+tags: ["Spark"]
+categories: ["Spark"]
+---
 ### Observation
 
 Signal file is widely used in Hadoop ecosystem. If you have experience with MapReduce, you’ll notice that by default MapReduce runtime writes an empty _SUCCESS file to mark successful completion of a job to the output folder. AWS DataPipeline and Databricks also support “file arrival” to trigger a downstream job.

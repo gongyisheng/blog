@@ -1,8 +1,10 @@
-+++
-date = '2023-02-10T12:00:00-07:00'
-draft = false
-title = 'MySQL connection deadlock'
-+++
+---
+date: '2023-02-10T12:00:00-07:00'
+draft: false
+title: 'MySQL connection deadlock'
+tags: ["MySQL", "Database", "Python", "aiomysql", "Packet Capture", "Incident"]
+categories: ["Database"]
+---
 ### Observation
 
 #### CronJob is taking more than 1h to complete

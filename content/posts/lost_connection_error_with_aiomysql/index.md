@@ -1,8 +1,10 @@
-+++
-date = '2024-01-16T12:00:00-07:00'
-draft = false
-title = 'Lost connection error with aiomysql'
-+++
+---
+date: '2024-01-16T12:00:00-07:00'
+draft: false
+title: 'Lost connection error with aiomysql'
+tags: ["MySQL", "Database", "Python", "aiomysql", "Packet Capture"]
+categories: ["Database"]
+---
 ### Background
 When I tried to run a big range query on mysql using `aiomysql`‘s `SSDictCursor`, everything looks fine at first but after a period of time (15min to 20min), the query stopped with error.
 The error message is: 

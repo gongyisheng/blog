@@ -1,9 +1,9 @@
 ---
-title: "Nginx reuseport导致偶发性卡顿"
 date: "2023-06-05T12:00:00-07:00"
-tags: ["nginx", "epoll", "network"]
-categories: ["network"]
 draft: false
+title: "Nginx reuseport导致偶发性卡顿"
+tags: ["Nginx", "Epoll", "Network", "Packet Capture", "Performance"]
+categories: ["Network"]
 ---
 
 ### 背景

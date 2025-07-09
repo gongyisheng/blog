@@ -1,8 +1,10 @@
-+++
-date = '2023-02-16T12:00:00-07:00'
-draft = false
-title = 'Redis OOM due to big keys'
-+++
+---
+date: '2023-02-16T12:00:00-07:00'
+draft: false
+title: 'Redis OOM due to big keys'
+tags: ["Redis", "Network", "OOM", "Packet Capture"]
+categories: ["Redis"]
+---
 ### Observation
 
 1. Queue client performance went down  

@@ -1,8 +1,10 @@
-+++
-date = '2025-06-30T12:00:00-07:00'
-draft = true
-title = '一些常用prompt'
-+++
+---
+date: '2025-06-30T12:00:00-07:00'
+draft: true
+title: '一些常用prompt'
+tags: []
+categories: []
+---
 
 1. 多问AI可行性分析，在做之前调研好所有的选项，最后再开始动手做
 2. prompt精修: 多轮对话修改prompt

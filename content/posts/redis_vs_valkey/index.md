@@ -1,8 +1,10 @@
-+++
-date = '2025-05-23T12:00:00-07:00'
-draft = false
-title = 'Redis vs Valkey'
-+++
+---
+date: '2025-05-23T12:00:00-07:00'
+draft: false
+title: 'Redis vs Valkey'
+tags: ["Redis", "Valkey", "Benchmark", "Performance"]
+categories: ["Redis"]
+---
 ### Redis vs Valkey
 ### Background
 过去一年各大云服务厂商在Redis换license之后，力推使用Valkey代替Redis作为kv内存数据库的使用方案。Valkey作为Redis 7.2.4 fork，不仅兼容redis各个语言的client库，也解决了Redis目前存在的单线程性能瓶颈和内存占用问题，不禁好奇其性能有多大提升，周末找了个时间进行了性能benchmark。  

@@ -1,8 +1,10 @@
-+++
-date = '2023-05-06T12:00:00-07:00'
-draft = false
-title = '为什么我的网络传输速度下降了'
-+++
+---
+date: '2023-05-06T12:00:00-07:00'
+draft: false
+title: '为什么我的网络传输速度下降了'
+tags: ["Network", "AWS", "Packet Capture"]
+categories: ["Network"]
+---
 ### 背景
 
 这个问题一开始是在进行RDS实验的时候发现的。最初的情景是，多台机器同时对数据库进行select和insert操作时，会发现insert操作会造成select操作qps大幅下降，且insert操作结束之后select操作的qps仍不能回升。起初以为是RDS的问题，但是在复现问题、监控RDS之后发现RDS的压力其实很小。于是开始怀疑是网络的问题，在简化了场景和操作之后，发现能在过去做tcp实验的机器上复现，于是用这个更简单的场景进行问题复现和分析。
