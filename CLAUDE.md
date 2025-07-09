@@ -56,7 +56,7 @@ hugo.toml                # Hugo configuration
 - `git checkout`: use git to switch branch
 - `git pull`: use git to pull commits from remote
 - `hugo build`: build the blog
-- `hugo serve`: serve the blog locally in `http://localhost:3000`
+- `hugo serve`: serve the blog locally in `http://localhost:1313`
 
 # Code style
 - common HTML/CSS styles
@@ -69,8 +69,8 @@ hugo.toml                # Hugo configuration
 
     Based on the user's request:  
     a) Identify the specific changes or features the user wants implemented.  
-    b) Explain how these changes relate to the current state of the blog (as observed from the build and server outputs).  
-    c) Suggest steps to implement the requested changes or features.  
+    b) Draft a plan to implement the changes or features including function created/modified/deleted and files touched.
+    c) Implement the requested changes or features.  
     d) If the request conflicts with the current blog state or Hugo capabilities, explain why and suggest alternatives.  
 
 3. Analyze the `hugo build` output  

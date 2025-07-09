@@ -1,8 +1,10 @@
-+++
-date = '2023-03-15T12:00:00-07:00'
-draft = false
-title = 'Broadcast variable cause OOM'
-+++
+---
+date: '2023-03-15T12:00:00-07:00'
+draft: false
+title: 'Spark driver OOM: Broadcast variable is too big'
+tags: ["data engineering", "incident", "software engineering", "spark", "oom"]
+categories: ["spark"]
+---
 ### Observation
 
 1. Spark cluster master node OOM  
