@@ -25,3 +25,4 @@ categories: []
 5. Claude code web searching之后的结果会被truncated，建议直接复制内容丢到对话框里
 6. CLAUDE.md 文件用于提供关键场外信息，尽量少且精简（必含：项目结构，关键文件和函数，workflow），权限在`.claude/settings.local.json`里管理
 7. 多看论文，可以提前看到趋势，ReAct，SWE Agent，Agentic LLM都是重要的让我们看到未来的论文
+8. 用https://r.jina.ai将html转化为markdown
