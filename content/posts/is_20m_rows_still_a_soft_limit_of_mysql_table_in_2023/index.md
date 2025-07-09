@@ -1,9 +1,9 @@
 ---
 title: "Is 20M of rows still a valid soft limit of MySQL table in 2023?"
-date: 2023-05-22
+date: '2023-05-22T12:00:00-07:00'
 draft: false
-tags: ["database", "mysql", "software engineering"]
-categories: ["Developer Story"]
+tags: ["Database", "MySQL", "performance"]
+categories: ["Database"]
 ---
 
 ### Rumor
