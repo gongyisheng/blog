@@ -1,6 +1,6 @@
 [[entries]]
   [entries.post_list]
-    limit = 10
+    limit = 15
     show_more = true
     show_more_text = "See archive..."
     show_more_url = "posts"
