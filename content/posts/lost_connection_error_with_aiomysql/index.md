@@ -12,21 +12,20 @@ The error message is:
 Error Code 2013: Lost connection to MySQL server during query.
 ```
 Environment
-- Database
-    ```
-    MySQL version: 8.0.29
-    connect_timeout=10
-    net_read_timeout=30
-    net_write_timeout=60
-    ```
-- Test Client
-    ```
-    Linux kernal version: 6.1
-    Instance type: AWS t2.micro (1 vCPU, 1GiB RAM)
-    Python: 3.8.10
-    aiomysql: 0.1.1
-    PyMySQL: 1.1.0
-    ```
+```
+Database
+MySQL version: 8.0.29
+connect_timeout=10
+net_read_timeout=30
+net_write_timeout=60
+
+Test Client
+Linux kernal version: 6.1
+Instance type: AWS t2.micro (1 vCPU, 1GiB RAM)
+Python: 3.8.10
+aiomysql: 0.1.1
+PyMySQL: 1.1.0
+```
 
 ### Observation
 
