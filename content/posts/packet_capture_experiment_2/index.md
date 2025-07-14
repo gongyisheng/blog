@@ -1,5 +1,5 @@
 ---
-date: '2023-04-15T12:00:00-07:00'
+date: '2023-04-15'
 draft: false
 title: 'Packet capture experiment 2'
 tags: ["Network", "Packet Capture"]

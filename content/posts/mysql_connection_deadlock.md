@@ -1,5 +1,5 @@
 ---
-date: '2023-02-10T12:00:00-07:00'
+date: '2023-02-10'
 draft: false
 title: 'MySQL connection deadlock'
 tags: ["MySQL", "Database", "Python", "aiomysql", "Packet Capture", "Incident"]

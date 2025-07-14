@@ -1,5 +1,5 @@
 ---
-date: '2024-01-16T12:00:00-07:00'
+date: '2024-01-16'
 draft: false
 title: 'Lost connection error with aiomysql'
 tags: ["MySQL", "Database", "Python", "aiomysql", "Packet Capture"]

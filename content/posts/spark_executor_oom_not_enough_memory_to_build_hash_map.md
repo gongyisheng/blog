@@ -1,5 +1,5 @@
 ---
-date: "2023-08-08T12:00:00-07:00"
+date: "2023-08-08"
 draft: false
 title: "Spark executor OOM: not enough memory to build hash map"
 tags: ["data engineering", "incident", "software engineering", "spark", "oom"]

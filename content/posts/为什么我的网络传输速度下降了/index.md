@@ -1,5 +1,5 @@
 ---
-date: '2023-05-06T12:00:00-07:00'
+date: '2023-05-06'
 draft: false
 title: '为什么我的网络传输速度下降了'
 tags: ["Network", "AWS", "Packet Capture"]

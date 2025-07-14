@@ -1,5 +1,5 @@
 ---
-date: '2023-01-13T12:00:00-07:00'
+date: '2023-01-13'
 draft: false
 title: 'Why signal file is a bad idea'
 tags: ["Spark"]

@@ -1,5 +1,5 @@
 ---
-date: '2023-05-27T12:00:00-07:00'
+date: '2023-05-27'
 draft: false
 title: 'Avoid using big strings as MySQL index key'
 tags: ["MySQL", "Database"]

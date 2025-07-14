@@ -1,5 +1,5 @@
 ---
-date: '2023-03-18T12:00:00-07:00'
+date: '2023-03-18'
 draft: false
 title: 'Spot termination makes runtime unstable'
 tags: ["Spark", "AWS"]

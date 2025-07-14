@@ -1,5 +1,5 @@
 ---
-date: '2023-03-15T12:00:00-07:00'
+date: '2023-03-15'
 draft: false
 title: 'Spark driver OOM: Broadcast variable is too big'
 tags: ["data engineering", "incident", "software engineering", "spark", "oom"]

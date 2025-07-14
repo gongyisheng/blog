@@ -1,5 +1,5 @@
 ---
-date: '2023-02-16T12:00:00-07:00'
+date: '2023-02-16'
 draft: false
 title: 'Redis OOM due to big keys'
 tags: ["Redis", "Network", "OOM", "Packet Capture"]
