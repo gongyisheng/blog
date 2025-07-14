@@ -7,6 +7,9 @@ date='2023-01-01T12:00:00-07:00'
 - [Chatgpt Proxy](https://chat.yellowday.day): An invite-only chatgpt proxy with prompt management support.
 - [My eBook Shelf](https://book.yellowday.day): My personal eBook storage. To share the knowledge with the world.
 
+### My Friends
+- [plantegg](https://plantegg.github.io/): database, network, performance improvement
+
 ### Find me here
 - [Twitter](https://x.com/Orange41324306)
 - [GitHub](https://github.com/gongyisheng)
