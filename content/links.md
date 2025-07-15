@@ -6,6 +6,7 @@ date='2023-01-01'
 ### Projects
 - [Chatgpt Proxy](https://chat.yellowday.day): An invite-only chatgpt proxy with prompt management support.
 - [My eBook Shelf](https://book.yellowday.day): My personal eBook storage. To share the knowledge with the world.
+- [My Writings](https://writings.yellowday.day): My personal literature writing collection, including short stories, travel and interview
 
 ### My Friends
 - [plantegg](https://plantegg.github.io/): database, network, performance improvement
