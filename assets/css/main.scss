@@ -1,0 +1,27 @@
+// Import the theme's main styles
+@import "../../themes/nostyle/assets/css/main.scss";
+
+// Custom overrides for full viewport height
+html {
+  height: 100%;
+}
+
+body {
+  min-height: 100vh; // Use viewport height instead of 100%
+  display: flex;
+  flex-direction: column;
+}
+
+main.page-content {
+  flex: 1; // This makes main expand to fill available space
+  display: flex;
+  flex-direction: column;
+}
+
+.w {
+  flex: 1; // This makes the content wrapper expand
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; // This pushes footer to bottom
+  min-height: calc(100vh - 8rem); // Account for padding
+}
