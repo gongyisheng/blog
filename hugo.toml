@@ -11,6 +11,7 @@ theme = 'nostyle'
   favicon = "/favicon.png"
   [params.theme_config]
     back_home_text = ".."
+    isShowFooter = true
   [params.taxonomy]
     showCount = true
     showDescription = true

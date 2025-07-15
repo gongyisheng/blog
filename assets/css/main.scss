@@ -1,27 +1,64 @@
 // Import the theme's main styles
 @import "../../themes/nostyle/assets/css/main.scss";
 
-// Custom overrides for full viewport height
+// Sticky footer layout with top-aligned content
 html {
   height: 100%;
 }
 
 body {
-  min-height: 100vh; // Use viewport height instead of 100%
-  display: flex;
-  flex-direction: column;
-}
-
-main.page-content {
-  flex: 1; // This makes main expand to fill available space
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
 .w {
-  flex: 1; // This makes the content wrapper expand
+  min-height: calc(100vh - 8rem);
   display: flex;
   flex-direction: column;
-  justify-content: space-between; // This pushes footer to bottom
-  min-height: calc(100vh - 8rem); // Account for padding
+}
+
+// Push footer to bottom when content is short
+.site-footer {
+  margin-top: auto;
+}
+
+.site-nav {
+  margin-bottom: 0;
+}
+
+// Eliminate all spacing after navigation
+.site-nav + p {
+  margin: 0;
+}
+
+// Remove spacing from elements following navigation
+.site-nav ~ p {
+  margin-top: 0;
+}
+
+// Hide empty elements that create spacing
+p > div:empty,
+div:empty {
+  display: none;
+}
+
+// Reduce space between header and content
+h1 {
+  margin-bottom: 0.5rem;
+}
+
+h1 + nav {
+  margin-top: 0;
+}
+
+// Remove spacing after headers on taxonomy pages
+h1 + p {
+  margin-top: 0;
+}
+
+// Hide date spans in post lists
+.post-list span,
+p span {
+  display: none;
 }
