@@ -1,0 +1,32 @@
+{{ define "main" }}
+{{ partial "back_link.html" .}}
+
+<h1>{{ .Title }}</h1>
+
+{{ .Content }}
+
+{{- if .Data.Terms }}
+<!-- This is a taxonomy list page (e.g., /categories/) -->
+<p>
+    {{- range $taxonomy := .Data.Terms.ByCount -}}
+    <div>
+        <span>({{ $taxonomy.Count }})</span>
+        <a href="{{ $taxonomy.Page.Permalink | relURL }}">{{ $taxonomy.Page.Title }}</a>
+    </div>
+    {{- end -}}
+</p>
+{{- else if .Data.Pages }}
+<!-- This is a term page (e.g., /categories/database/) -->
+ <p>
+    {{- range $post := .Data.Pages -}}
+    <div>
+        <span>{{ $post.Date.Format "2006-01-02" }}</span>
+        <a href="{{ $post.Permalink | relURL }}">{{ $post.Title }}</a>
+    </div>
+    {{- end -}}
+</p>
+{{- else }}
+<p>No content found</p>
+{{- end }}
+
+{{ end }}
