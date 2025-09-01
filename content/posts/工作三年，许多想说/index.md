@@ -1,6 +1,6 @@
 ---
-date: '2025-08-09'
-draft: true
+date: '2025-09-01'
+draft: false
 title: '工作三年，许多想说'
 tags: ["Career Notes"]
 categories: ["Career Notes"]
