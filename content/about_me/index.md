@@ -11,5 +11,6 @@ Software Engineer@[YipitData](https://www.yipitdata.com/)
 Based in Santa Clara, California.
 
 Interested in python, network, database and performance improvement  
+Recently start working on AI/LLM
 
 Hope you will love my posts
