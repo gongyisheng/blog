@@ -2,8 +2,8 @@
 date: '2025-12-12'
 draft: true
 title: 'Memorization vs Generalization'
-tags: [learning, reasoning]
-categories: [thoughts]
+tags: [Thoughts, LLM, RL]
+categories: [LLM]
 ---
 
 Today I revisit the classic LRU cache problem in my [playground](https://github.com/gongyisheng/playground/blob/main/algorithm/lru.py) repo. The standard answer comes to my mind immediately: HashMap + Doubly Linked List. Cool, I remember that. But then I ask myself, what about LFU, B+Tree, and other complex data structures? I can barely remember and have to look up the script I developed when I'm at school. 
@@ -93,15 +93,10 @@ Great question. This is about working backwards from operation requirements to d
   - Redis sorted sets: HashMap + Skip List
 ```
 
-This is basically what we want for generalization, the right reasoning trajectory in the middle of question and answer. Human also benefits a lot from theses because
+This is basically what we want for generalization, which is reusable knowledge, a mental template we can apply to new problems we've never seen before. 
 
-So in the R1-like RL training, when we are only providing Q + A and apply GRPO training, we are trying to the training on Q + A → learning the trajectory between them. The trajectory is the real prize.
-
-Same thing everywhere honestly:
-- Math: deriving formulas vs memorizing them
-- Chess: principles vs opening lines
-- Coding: understanding the fix vs copy-pasting from SO
-
-The goal isn't collecting answers. It's collecting reasoning patterns.
+I have 2 takeaways for both LLM and human:
+- For LLM: In R1-like RL training, when we are only providing Q + A and apply GRPO policy, what we are doing is trying to the exploit the correct reasoning distribution from base model, deriving a kind of reusable knowledge between Q and A. The trajectory is the real prize.
+- For human: since LLMs are become stronger and contains more and more "reusable knowledge", it's a good idea to learn from LLM's reasoning trajectory, ask more "how did you come up with this" after getting the answer.
 
 If you can't explain *why* the solution works, you only memorized the conclusion.
