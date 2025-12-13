@@ -1,6 +1,6 @@
 ---
 date: '2025-12-12'
-draft: true
+draft: false
 title: 'Memorization vs Generalization'
 tags: [Thoughts, LLM, RL]
 categories: [LLM]
