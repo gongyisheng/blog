@@ -11,9 +11,7 @@ Today I revisit the classic LRU cache problem in my [playground](https://github.
 Yeah, the real problem is that I'm memorizing the answer, not generalization. I suddenly realized that it's also where LLMs suffer from: they are so good at memorizing answer, but not able to generalize.
 
 So I ask claude following questions:
-```
-To implement the LRU cache the optimal way is to use hashmap + doubly linked list, why use this combo? Why other combos are inefficient than this one? How would you derive it?
-```
+`To implement the LRU cache the optimal way is to use hashmap + doubly linked list, why use this combo? Why other combos are inefficient than this one? How would you derive it?`
 
 Here's claude's answer (claude-4.5-opus)
 ```
