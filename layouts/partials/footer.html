@@ -1,3 +1,25 @@
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  document.querySelectorAll("article img").forEach(function(img) {
+    img.addEventListener("click", function() {
+      var overlay = document.createElement("div");
+      overlay.className = "lightbox-overlay";
+      var clone = document.createElement("img");
+      clone.src = img.src;
+      clone.alt = img.alt;
+      overlay.appendChild(clone);
+      overlay.addEventListener("click", function() { overlay.remove(); });
+      document.body.appendChild(overlay);
+    });
+  });
+  document.addEventListener("keydown", function(e) {
+    if (e.key === "Escape") {
+      var overlay = document.querySelector(".lightbox-overlay");
+      if (overlay) overlay.remove();
+    }
+  });
+});
+</script>
 {{ if site.Params.theme_config.isShowFooter }}
     {{ $footerContent := readFile "layouts/footer.md" }}
     {{ if and $footerContent (ne $footerContent "") }}
