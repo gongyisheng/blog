@@ -298,7 +298,6 @@ Qwen3-30B-A3B has **~61GB** of weights (vs ~1.2GB for the dense 0.6B), spread ac
 Some non-obvious things I encountered while implementing MoE:
 
 - **Expert weight count is massive**: 128 experts × 3 matrices × 48 layers = 18,432 weight tensors just for the MoE FFN. The weight mapping logic needs to handle pattern-based renaming efficiently — you can't enumerate all keys manually.
-- **`torch.where` returns a tuple**: `torch.where(condition)` returns `(row_indices, col_indices)`, not a boolean mask. This is the key to efficiently dispatching tokens to experts.
 - **Empty experts are common**: Not every expert is selected in every forward pass. The `if token_idx.numel() == 0: continue` check is essential — running an expert on zero tokens would error.
 - **Memory vs. compute tradeoff**: All 128 expert weights must be in memory even though only 8 are used per token. The model is 30B params but activates ~3B per token — you pay the memory cost of 30B but only the compute cost of ~3B.
 - **This naive implementation is slow**: The loop-over-experts approach is simple to understand but not GPU-efficient. Production systems (vLLM, SGLang) use **expert-parallel** strategies — batching tokens across experts with fused kernels, or distributing experts across GPUs via **Expert Parallelism (EP)**. But for learning purposes, the loop makes the routing logic crystal clear.
