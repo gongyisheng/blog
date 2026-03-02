@@ -8,6 +8,7 @@ theme = 'nostyle'
     dir = ':cacheDir/images'
 
 [params]
+  description = "Yisheng's blog on LLMs, databases, distributed systems, and software engineering."
   favicon = "/favicon.png"
   [params.theme_config]
     back_home_text = ".."
