@@ -58,6 +58,14 @@ MoE breaks this tradeoff: instead of one large FFN that processes every token, u
 
 The model learns **much more** (30B params) while computing **much less** per token (~3B active). Different experts specialize in different types of tokens — the router learns to send each token to the most relevant experts.
 
+### Design variant: shared experts
+
+Not all MoE models route experts the same way. For example, DeepSeek-MoE introduces **shared experts** — 1-2 experts that are **always activated** for every token, whose output is added directly (not weighted by the router). They handle universal abilities (basic syntax, common patterns), freeing the routed experts to specialize. 
+
+Qwen3 MoE does **not** use shared experts — all 128 experts go through the same top-k routing, which is simpler but means multiple experts may redundantly learn overlapping general abilities. 
+
+Note that Qwen3's successor Qwen3-Next adds shared experts as an architectural improvement.
+
 ## Config
 
 Here are the Qwen3-30B-A3B config values, compared with Qwen3-0.6B:
@@ -148,7 +156,7 @@ class MoERouter(nn.Module):
 
 ### How the router works
 
-The router's weight matrix (`Linear(2048, 128)`) is learned during training — each column represents an "expert profile", and the dot product `hidden_state @ weight.T` scores how relevant each expert is for a given token. Over training, experts specialize (e.g. code, math, common English, visual, etc), and the router learns to dispatch accordingly. Softmax is applied **after** top-k (`moe_norm_topk_prob=True`) so the 8 routing weights always sum to 1.0.
+The router's weight matrix (`Linear(2048, 128)`) is learned during training — each column represents an "expert profile", and the dot product `hidden_state @ weight.T` scores how relevant each expert is for a given token. Softmax is applied **after** top-k (`moe_norm_topk_prob=True`) so the 8 routing weights always sum to 1.0.
 
 **Load balancing.** During training, without intervention, the router can collapse into always picking the same few "strong" experts — those experts get more training signal, become even stronger, and the rest never improve. This rich-get-richer problem wastes most of the model's capacity. Training typically adds an **auxiliary load-balancing loss** that penalizes uneven expert usage:
 
@@ -170,7 +178,7 @@ Because the router is fragile — small changes can drastically shift routing pa
 
 ![img](./images/moe_block.png)
 
-The `SparseMoEBlock` combines the router with 128 expert FFNs. This is the module that **replaces the dense SwiGLU FFN** in each transformer layer. The key advantage is **sparsity** — although each expert has a smaller intermediate dimension (768 vs 3,072), having 128 of them forces each expert to **specialize** in a narrow domain (e.g. code syntax, mathematical reasoning, common phrases). The model stores far more knowledge across all experts than a single dense FFN could, while only paying the compute cost of 8 small experts per token.
+The `SparseMoEBlock` combines the router with 128 expert FFNs. This is the module that **replaces the dense SwiGLU FFN** in each transformer layer. Each expert is a regular `SwiGLUFFN` — the same architecture from the dense model, just with the smaller `moe_hidden_dim`.
 
 Each expert is a regular `SwiGLUFFN` — the same architecture from the dense model, just smaller:
 
@@ -299,5 +307,4 @@ Some non-obvious things I encountered while implementing MoE:
 
 - **Expert weight count is massive**: 128 experts × 3 matrices × 48 layers = 18,432 weight tensors just for the MoE FFN. The weight mapping logic needs to handle pattern-based renaming efficiently — you can't enumerate all keys manually.
 - **Empty experts are common**: Not every expert is selected in every forward pass. The `if token_idx.numel() == 0: continue` check is essential — running an expert on zero tokens would error.
-- **Memory vs. compute tradeoff**: All 128 expert weights must be in memory even though only 8 are used per token. The model is 30B params but activates ~3B per token — you pay the memory cost of 30B but only the compute cost of ~3B.
 - **This naive implementation is slow**: The loop-over-experts approach is simple to understand but not GPU-efficient. Production systems (vLLM, SGLang) use **expert-parallel** strategies — batching tokens across experts with fused kernels, or distributing experts across GPUs via **Expert Parallelism (EP)**. But for learning purposes, the loop makes the routing logic crystal clear.
