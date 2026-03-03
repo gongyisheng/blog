@@ -10,7 +10,8 @@ Software Engineer@[YipitData](https://www.yipitdata.com/)
 
 Based in Santa Clara, California.
 
-Interested in python, network, database and performance improvement  
-Recently start working on AI/LLM
+Recently working on Agent/RL Infra
+
+I m a committer of [sglang](https://github.com/sgl-project/sglang) and [miles](https://github.com/radixark/miles)
 
 Hope you will love my posts
