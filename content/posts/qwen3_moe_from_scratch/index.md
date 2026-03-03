@@ -187,7 +187,7 @@ Each expert is a regular `SwiGLUFFN` — the same architecture from the dense mo
 SwiGLUFFN(emb_dim=1024, hidden_dim=3072)   # one large FFN
 
 # MoE Qwen3-30B-A3B expert:
-SwiGLUFFN(emb_dim=2048, hidden_dim=768)    # 128 small FFNs
+SwiGLUFFN(emb_dim=2048, moe_hidden_dim=768)    # 128 small FFNs
 ```
 
 ### Implementation
@@ -198,16 +198,17 @@ The core algorithm flattens the batch, routes tokens to experts via the router, 
 class SparseMoEBlock(nn.Module):
     def __init__(self, emb_dim, n_experts, n_experts_per_token, moe_hidden_dim, moe_norm_topk_prob):
         super().__init__()
+        self.n_experts = n_experts
         self.experts = nn.ModuleList([
             SwiGLUFFN(emb_dim, moe_hidden_dim) for _ in range(n_experts)
         ])
-        self.gate = MoERouter(emb_dim, n_experts, n_experts_per_token, moe_norm_topk_prob)
+        self.router = MoERouter(emb_dim, n_experts, n_experts_per_token, moe_norm_topk_prob)
 
     def forward(self, x):
         batch, seq_len, emb_dim = x.shape
         hidden_states = x.view(-1, emb_dim)                     # flatten to (num_tokens, emb_dim)
 
-        routing_weights, selected_experts = self.gate(hidden_states)
+        routing_weights, selected_experts = self.router(hidden_states)
         output = torch.zeros_like(hidden_states)                 # accumulator
 
         for expert_idx in range(self.n_experts):                 # loop over all 128 experts
@@ -275,7 +276,7 @@ LAYER_KEY_MAP = {
     "self_attn.q_norm.weight":          "attn.q_norm.weight",
     "self_attn.k_norm.weight":          "attn.k_norm.weight",
     # MoE router (NEW — one per layer)
-    "mlp.gate.weight":                  "moe_ffn.gate.proj.weight",
+    "mlp.gate.weight":                  "moe_ffn.router.proj.weight",
 }
 ```
 
