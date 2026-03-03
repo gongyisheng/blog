@@ -104,17 +104,21 @@ Rather than reimplementing BPE, I use the HuggingFace `tokenizers` library (Rust
 
 ```python
 class Qwen3Tokenizer:
-    def __init__(self, tokenizer: Tokenizer, chat_template: Template):
+    def __init__(self, tokenizer: Tokenizer, chat_template: Template, pad_token_id: int):
         self.tokenizer = tokenizer
         self.chat_template = chat_template
+        self.pad_token_id = pad_token_id
 
     @classmethod
     def from_model_dir(cls, path):
+        path = Path(path)
         tokenizer = Tokenizer.from_file(str(path / "tokenizer.json"))
         with open(path / "tokenizer_config.json") as f:
-            template_str = json.load(f)["chat_template"]
-        chat_template = Template(template_str)
-        return cls(tokenizer, chat_template)
+            tok_cfg = json.load(f)
+        chat_template = Template(tok_cfg["chat_template"])
+        pad_token = tok_cfg.get("pad_token", "<|endoftext|>")
+        pad_token_id = tokenizer.token_to_id(pad_token)
+        return cls(tokenizer, chat_template, pad_token_id)
 
     def apply_chat_template(self, messages, enable_thinking=False):
         return self.chat_template.render(
@@ -165,23 +169,24 @@ Unlike LayerNorm, there's no mean subtraction (no centering) — just scale norm
 class RMSNorm(nn.Module):
     def __init__(self, dim, eps=1e-6):
         super().__init__()
-        self.weight = nn.Parameter(torch.ones(dim))  # learnable scale
+        self.weight = nn.Parameter(torch.empty(dim))  # learnable scale
         self.eps = eps
 
     def forward(self, x):
         dtype = x.dtype
         x = x.to(torch.float32)  # float32 for numerical stability
-        rms = x.pow(2).mean(dim=-1, keepdim=True).sqrt()
-        output = x / (rms + self.eps) * self.weight
-        return output.to(dtype)
+        x = x * torch.rsqrt(x.pow(2).mean(dim=-1, keepdim=True) + self.eps)
+        return self.weight * x.to(dtype)
 ```
 
 Implementation details:
-- **`eps`**: a tiny constant (1e-6) added before the square root to prevent division by zero when all values are near zero.
-- **Cast to float32** before computing: bfloat16 has limited precision for squaring and averaging. Cast back after.
+- **`eps`**: a tiny constant (1e-6) added **inside** `rsqrt` (before the reciprocal square root) to prevent division by zero when all values are near zero.
+- **`torch.rsqrt`**: fuses reciprocal + square root into one op — faster than separate `sqrt` + division.
+- **Cast to float32** before computing: bfloat16 has limited precision for squaring and averaging.
+- **Casting order matters**: `self.weight * x.to(dtype)` — cast x back to bfloat16 **first**, then multiply by weight. This matches HuggingFace's implementation. The alternative `(x * self.weight).to(dtype)` produces different rounding in bfloat16, causing token-level mismatches.
 - **`keepdim=True`**: The RMS has shape `[batch, seq, 1]` so it broadcasts correctly against `[batch, seq, dim]`.
 - **Learnable weight (no bias)**: After normalization, the model needs to rescale — different dimensions may need different magnitudes.
-- **Faster alternative**: `torch.rsqrt(variance + eps)` avoids separate sqrt + division (one fused op instead of two).
+- **`torch.empty`** instead of `torch.ones`: allows meta-device initialization (weights are loaded from checkpoint, not initialized).
 
 In Qwen3, each transformer block has **4 RMSNorms**: pre-attention (`norm1`), QK-Norm on query and key (`q_norm`, `k_norm`), and pre-FFN (`norm2`). Plus 1 final RMSNorm before lm_head. That's **4 × 28 + 1 = 113 RMSNorm calls** per forward pass — which is why RMSNorm is a **performance bottleneck** during inference. Not because of compute, but because it's **memory-bandwidth bound**: the actual math (square, mean, sqrt, multiply) is trivial, but loading/storing the entire hidden state from GPU memory dominates. This is why production implementations use **fused CUDA kernels** that do everything in one memory pass.
 
@@ -238,19 +243,25 @@ Attention scores come from `Q @ K.T`. By rotating Q and K, the dot product betwe
 class RoPE(nn.Module):
     def __init__(self, head_dim, base, max_seq_len):
         super().__init__()
+        self.head_dim = head_dim
+        self.base = base
+        self.max_seq_len = max_seq_len
+        self._build_buffers()
+
+    def _build_buffers(self):
         # precompute sin/cos tables
-        freqs = 1.0 / (base ** (torch.arange(0, head_dim, 2) / head_dim))
-        positions = torch.arange(max_seq_len)
+        freqs = 1.0 / (self.base ** (torch.arange(0, self.head_dim, 2) / self.head_dim))
+        positions = torch.arange(self.max_seq_len)
         angles = positions[:, None] * freqs[None, :]  # [seq, 64]
         angles = torch.cat([angles, angles], dim=-1)   # [seq, 128] (duplicate for pairs)
         self.register_buffer("cos", torch.cos(angles))
         self.register_buffer("sin", torch.sin(angles))
 
-    def forward(self, x, position_offset=0):
+    def forward(self, x, position_ids):
         # x: (batch, n_heads, seq_len, head_dim)
-        seq_len = x.shape[2]
-        cos = self.cos[position_offset : position_offset + seq_len][None, None, :, :]
-        sin = self.sin[position_offset : position_offset + seq_len][None, None, :, :]
+        # position_ids: (batch, seq_len)
+        cos = self.cos[position_ids][:, None, :, :].to(x.dtype)  # (batch, 1, seq_len, head_dim)
+        sin = self.sin[position_ids][:, None, :, :].to(x.dtype)
 
         x1 = x[..., :self.head_dim // 2]   # first 64 dims
         x2 = x[..., self.head_dim // 2:]    # last 64 dims
@@ -268,7 +279,11 @@ This is exactly the rotation matrix applied to each pair.
 
 **`torch.cat([angles, angles])`:** The duplicated angles ensure `cos` and `sin` have shape `[seq, 128]` matching `head_dim`. The first 64 values correspond to `x1`'s rotation, the last 64 to `x2`'s rotation — they use the same angles because each pair `(x1[i], x2[i])` shares one rotation angle.
 
-**`position_offset`:** During generation with KV cache, we decode one token at a time. The new token at decode step 5 needs the angle for position `prompt_len + 5`, not position 0. The offset indexes into the precomputed table at the correct position.
+**`position_ids`:** A tensor of shape `(batch, seq_len)` that maps each token to its position in the precomputed table. During single-sequence generation, this is just `[0, 1, 2, ...]`. During batch generation with left-padding, each sequence has its own position mapping — pad tokens get position 0 (masked out anyway), real tokens get sequential positions. During decode, each new token gets a single position ID `[[prompt_len + step]]`. This is more flexible than a scalar offset — it supports per-token position IDs needed for batched, padded sequences.
+
+**`.to(x.dtype)`:** The cos/sin buffers are precomputed in float32, but the input `x` may be bfloat16. Casting cos/sin to match `x.dtype` avoids mixed-precision matmuls that produce different rounding than HuggingFace's implementation.
+
+**`_build_buffers`:** Separated from `__init__` so buffers can be recomputed after meta-device initialization (where tensors are created without allocating memory, then filled later by weight loading).
 
 ## Grouped Query Attention (GQA)
 
@@ -292,20 +307,23 @@ Qwen3 uses GQA with 16 query heads and 8 KV groups — each KV group serves 2 qu
 class GroupQueryAttention(nn.Module):
     def __init__(self, emb_dim, n_heads, n_kv_groups, head_dim):
         super().__init__()
-        self.W_q = nn.Linear(emb_dim, n_heads * head_dim, bias=False)
-        self.W_k = nn.Linear(emb_dim, n_kv_groups * head_dim, bias=False)
-        self.W_v = nn.Linear(emb_dim, n_kv_groups * head_dim, bias=False)
-        self.W_o = nn.Linear(n_heads * head_dim, emb_dim, bias=False)
+        self.n_heads = n_heads
+        self.n_kv_groups = n_kv_groups
+        self.head_dim = head_dim
+        self.q_proj = nn.Linear(emb_dim, n_heads * head_dim, bias=False)
+        self.k_proj = nn.Linear(emb_dim, n_kv_groups * head_dim, bias=False)
+        self.v_proj = nn.Linear(emb_dim, n_kv_groups * head_dim, bias=False)
+        self.o_proj = nn.Linear(n_heads * head_dim, emb_dim, bias=False)
         self.q_norm = RMSNorm(head_dim)
         self.k_norm = RMSNorm(head_dim)
 
-    def forward(self, x, rope, position_offset=0, kv_cache=None):
+    def forward(self, x, rope, position_ids, kv_cache=None, attn_mask=None):
         batch, seq_len, _ = x.shape
 
         # project and reshape to [batch, heads, seq, head_dim]
-        Q = self.W_q(x).view(batch, seq_len, self.n_heads, self.head_dim).transpose(1, 2)
-        K = self.W_k(x).view(batch, seq_len, self.n_kv_groups, self.head_dim).transpose(1, 2)
-        V = self.W_v(x).view(batch, seq_len, self.n_kv_groups, self.head_dim).transpose(1, 2)
+        Q = self.q_proj(x).view(batch, seq_len, self.n_heads, self.head_dim).transpose(1, 2)
+        K = self.k_proj(x).view(batch, seq_len, self.n_kv_groups, self.head_dim).transpose(1, 2)
+        V = self.v_proj(x).view(batch, seq_len, self.n_kv_groups, self.head_dim).transpose(1, 2)
 
         # QK-Norm: stabilize attention logits
         Q = self.q_norm(Q.reshape(-1, seq_len, self.head_dim))
@@ -314,8 +332,8 @@ class GroupQueryAttention(nn.Module):
         K = K.view(batch, self.n_kv_groups, seq_len, self.head_dim)
 
         # apply RoPE (position encoding on Q and K only)
-        Q = rope(Q, position_offset)
-        K = rope(K, position_offset)
+        Q = rope(Q, position_ids)
+        K = rope(K, position_ids)
 
         # KV cache: concat past keys/values
         if kv_cache is not None:
@@ -331,16 +349,13 @@ class GroupQueryAttention(nn.Module):
 
         # attention scores
         scores = Q @ K.transpose(-2, -1) / (self.head_dim ** 0.5)
-        if kv_cache is None:  # causal mask only during prefill
-            mask = torch.triu(
-                torch.ones(seq_len, seq_len, device=x.device), diagonal=1
-            ).bool()
-            scores.masked_fill_(mask, float("-inf"))
-        attn = F.softmax(scores, dim=-1)
+        if attn_mask is not None:
+            scores = scores + attn_mask
+        attn = F.softmax(scores, dim=-1, dtype=torch.float32).to(x.dtype)
         context = attn @ V
 
         context = context.transpose(1, 2).reshape(batch, seq_len, -1)
-        return self.W_o(context), new_kv_cache
+        return self.o_proj(context), new_kv_cache
 ```
 
 ### QK-Norm
@@ -360,16 +375,22 @@ Without KV cache, generating N tokens costs **O(N^2)** attention computations. W
 
 ### Causal Mask
 
-LLMs generate tokens left-to-right, so earlier tokens should **never see later tokens** when computing attention scores — otherwise the model would be "cheating" by looking at the answer before predicting it. The causal mask enforces this by setting attention scores to `-inf` for all future positions, so token at position `i` can only attend to positions `0..i`:
+LLMs generate tokens left-to-right, so earlier tokens should **never see later tokens** when computing attention scores — otherwise the model would be "cheating" by looking at the answer before predicting it. The causal mask enforces this by setting attention scores to `-inf` for all future positions, so token at position `i` can only attend to positions `0..i`.
+
+The mask is passed as an **additive** `attn_mask` parameter — a tensor of `0` (attend) and `-inf` (block) that gets added to scores before softmax. This approach is more flexible than boolean `masked_fill_` because it composes naturally with other masks (padding, etc.) via element-wise addition:
 
 ```python
-mask = torch.triu(torch.ones(seq_len, seq_len), diagonal=1).bool()
-scores.masked_fill_(mask, float("-inf"))
+# construct causal mask for prefill
+causal_mask = torch.triu(torch.ones(seq_len, seq_len), diagonal=1).bool()
+attn_mask = torch.where(causal_mask, float("-inf"), 0.0)  # additive mask
+# in forward: scores = scores + attn_mask
 ```
+
+**Softmax in float32**: `F.softmax(scores, dim=-1, dtype=torch.float32).to(x.dtype)` — softmax is computed in float32 for numerical stability, then cast back. This matches HuggingFace's implementation and prevents precision-related token divergence.
 
 **Why `-inf` instead of 0?** Because of softmax. If you mask with 0, `softmax(0)` gives some positive value — the model would still attend to future tokens. `softmax(-inf) = 0` — the masked positions contribute exactly zero attention weight.
 
-**Why only during prefill?** During decode, Q is a single token attending to all previous K tokens via the KV cache. There's nothing "future" to mask — the cache only contains past tokens. The mask is only needed during prefill when processing the full prompt where multiple tokens exist simultaneously.
+**Why only during prefill?** During decode, Q is a single token attending to all previous K tokens via the KV cache. There's nothing "future" to mask — the cache only contains past tokens. The `attn_mask` is `None` during single-sequence decode (though batch decode needs a padding mask — see Batch Generation).
 
 ## SwiGLU FFN
 
@@ -383,25 +404,25 @@ FFN weights make up the **largest portion** of a transformer's parameters (~2/3 
 
 **Why use a gate?** Standard FFN applies an activation to all dimensions uniformly. SwiGLU adds a **gate** that learns *which* hidden dimensions to activate for each input — a learned "filter" that selectively passes or suppresses information. This gives the model finer control over information flow, which is why SwiGLU consistently outperforms ReLU in practice.
 
-Qwen3 uses SwiGLU with three weight matrices (`W_gate`, `W_up`, `W_down`) instead of the standard two. The hidden dimension is 3,072 (3× expansion) instead of the traditional 4×, since the extra gate matrix compensates for the parameter count:
+Qwen3 uses SwiGLU with three weight matrices (`gate_proj`, `up_proj`, `down_proj`) instead of the standard two. The hidden dimension is 3,072 (3× expansion) instead of the traditional 4×, since the extra gate matrix compensates for the parameter count:
 
 ```
-FFN(x) = W_down(SiLU(W_gate(x)) * W_up(x))
+FFN(x) = down_proj(SiLU(gate_proj(x)) * up_proj(x))
 ```
 
 ```python
 class SwiGLUFFN(nn.Module):
     def __init__(self, emb_dim, hidden_dim):
         super().__init__()
-        self.W_gate = nn.Linear(emb_dim, hidden_dim, bias=False)
-        self.W_up   = nn.Linear(emb_dim, hidden_dim, bias=False)
-        self.W_down  = nn.Linear(hidden_dim, emb_dim, bias=False)
+        self.gate_proj = nn.Linear(emb_dim, hidden_dim, bias=False)
+        self.up_proj   = nn.Linear(emb_dim, hidden_dim, bias=False)
+        self.down_proj = nn.Linear(hidden_dim, emb_dim, bias=False)
 
     def forward(self, x):
-        return self.W_down(F.silu(self.W_gate(x)) * self.W_up(x))
+        return self.down_proj(F.silu(self.gate_proj(x)) * self.up_proj(x))
 ```
 
-`W_gate` produces a gate signal (passed through SiLU = `x * sigmoid(x)`), `W_up` produces the candidate values, and they're multiplied element-wise — the gate controls how much of each hidden dimension passes through. `W_down` projects the result back to `emb_dim`.
+`gate_proj` produces a gate signal (passed through SiLU = `x * sigmoid(x)`), `up_proj` produces the candidate values, and they're multiplied element-wise — the gate controls how much of each hidden dimension passes through. `down_proj` projects the result back to `emb_dim`.
 
 ## Transformer Block
 
@@ -420,10 +441,10 @@ class TransformerBlock(nn.Module):
         self.norm2 = RMSNorm(config.emb_dim)
         self.ffn = SwiGLUFFN(config.emb_dim, config.hidden_dim)
 
-    def forward(self, x, rope, position_offset=0, kv_cache=None):
+    def forward(self, x, rope, position_ids, kv_cache=None, attn_mask=None):
         residual = x
         x = self.norm1(x)
-        x, new_kv_cache = self.attn(x, rope, position_offset, kv_cache)
+        x, new_kv_cache = self.attn(x, rope, position_ids, kv_cache, attn_mask)
         x = x + residual          # residual connection
 
         residual = x
@@ -463,29 +484,44 @@ KEY_MAP = {
 }
 
 LAYER_KEY_MAP = {
-    "self_attn.q_proj.weight": "attn.W_q.weight",
-    "self_attn.k_proj.weight": "attn.W_k.weight",
-    "mlp.gate_proj.weight":    "ffn.W_gate.weight",
+    "self_attn.q_proj.weight": "attn.q_proj.weight",
+    "self_attn.k_proj.weight": "attn.k_proj.weight",
+    "self_attn.v_proj.weight": "attn.v_proj.weight",
+    "self_attn.o_proj.weight": "attn.o_proj.weight",
+    "self_attn.q_norm.weight": "attn.q_norm.weight",
+    "self_attn.k_norm.weight": "attn.k_norm.weight",
+    "mlp.gate_proj.weight":    "ffn.gate_proj.weight",
+    "mlp.up_proj.weight":      "ffn.up_proj.weight",
+    "mlp.down_proj.weight":    "ffn.down_proj.weight",
     ...
 }
 
-def load_weights(model, model_dir):
-    all_weights = {}
+def load_weights(model, model_dir, dtype=None):
     for f in sorted(Path(model_dir).glob("*.safetensors")):
-        all_weights.update(load_file(str(f)))
-
-    renamed = {}
-    for hf_key, tensor in all_weights.items():
-        new_key = rename_hf_key(hf_key)
-        if new_key:
+        shard = load_file(str(f))
+        renamed = {}
+        for hf_key, tensor in shard.items():
+            new_key = rename_hf_key(hf_key)
+            if new_key is None:
+                continue
+            if dtype is not None:
+                tensor = tensor.to(dtype=dtype)
             renamed[new_key] = tensor
+        model.load_state_dict(renamed, strict=False, assign=True)
+        del shard, renamed
 
-    model.load_state_dict(renamed, strict=False)
+    # assign=True replaces Parameter objects, breaking weight tying.
+    # Re-tie lm_head to tok_emb when the checkpoint omits lm_head.weight.
+    if hasattr(model, "lm_head") and hasattr(model, "tok_emb"):
+        if model.lm_head.weight.is_meta and not model.tok_emb.weight.is_meta:
+            model.lm_head.weight = model.tok_emb.weight
 ```
 
 **No transpose needed**: Both HuggingFace and PyTorch's `nn.Linear` store weight matrices as `[out_features, in_features]`. This is unlike JAX/Flax which uses `[in, out]` — a JAX implementation would need explicit transposes.
 
-**`strict=False`**: RoPE's `cos` and `sin` buffers are precomputed (registered via `register_buffer`), not stored in safetensors. `strict=False` allows loading without errors from these missing keys.
+**Per-shard loading**: Weights are loaded one safetensors file at a time (not all at once), with `del shard, renamed` to free memory between shards. This matters for large models where loading all weights at once would exceed available RAM.
+
+**`strict=False, assign=True`**: `strict=False` allows missing keys (RoPE's `cos`/`sin` buffers aren't in safetensors). `assign=True` replaces Parameter objects in-place — this is needed for meta-device initialization, but it **breaks weight tying** (the Python reference between `lm_head.weight` and `tok_emb.weight` is lost). The re-tie logic at the bottom detects this via `.is_meta` and re-establishes the tie.
 
 **Weight tying**: When `tie_word_embeddings=true`, the embedding matrix and the output projection (`lm_head`) share the same weight tensor:
 ```python
@@ -530,47 +566,62 @@ It's recommended to use the **model's default sampling settings** (specified in 
 ### Generate loop
 
 ```python
-def generate(model, prompt_token_ids, max_new_tokens, temperature, top_k, eos_token_id):
-    input_ids = prompt_token_ids.unsqueeze(0)  # add batch dim
-    prompt_len = input_ids.shape[1]
+def generate(model, prompt_token_ids, max_new_tokens, temperature=1.0, top_k=-1, eos_token_id=None):
+    device = next(model.parameters()).device
+    prompt_len = len(prompt_token_ids)
+    input_ids = torch.tensor([prompt_token_ids], device=device)
 
-    # prefill: process entire prompt, get first token
-    logits, kv_cache = model(input_ids)
+    # prefill: build causal mask, process entire prompt
+    position_ids = torch.arange(prompt_len, device=device).unsqueeze(0)
+    dtype = next(model.parameters()).dtype
+    causal_mask = torch.triu(
+        torch.ones(prompt_len, prompt_len, device=device, dtype=torch.bool), diagonal=1
+    )
+    attn_mask = torch.where(causal_mask, float("-inf"), 0.0)[None, None].to(dtype)
+    logits, kv_cache = model(input_ids, position_ids, attn_mask=attn_mask)
     next_token = sample(logits[:, -1, :], temperature, top_k)
     generated = [next_token.item()]
 
     # decode: one token at a time with KV cache
     for _ in range(max_new_tokens - 1):
         offset = prompt_len + len(generated) - 1
-        logits, kv_cache = model(next_token.view(1, 1), offset, kv_cache)
+        position_ids = torch.tensor([[offset]], device=device)
+        logits, kv_cache = model(next_token.view(1, 1), position_ids, kv_cache)
         next_token = sample(logits[:, -1, :], temperature, top_k)
         generated.append(next_token.item())
-        if eos_token_id and next_token.item() == eos_token_id:
+        if eos_token_id is not None and next_token.item() == eos_token_id:
             break
 
-    return prompt_token_ids.tolist() + generated
+    return prompt_token_ids + generated
 ```
 
-**Prefill**: The entire prompt is processed in one forward pass. This produces KV cache entries for all prompt tokens and the logits for the first generated token.
+**Prefill**: The entire prompt is processed in one forward pass with an explicit causal mask (additive, with `-inf` for future positions). This produces KV cache entries for all prompt tokens and the logits for the first generated token.
 
-**Decode**: Each step feeds only the last generated token (shape `[1, 1]`) through the model. The KV cache grows by one entry per layer. Position offset ensures RoPE uses the correct angle for the new token's actual position.
+**Decode**: Each step feeds only the last generated token (shape `[1, 1]`) through the model. The KV cache grows by one entry per layer. Position IDs ensure RoPE uses the correct angle for the new token's actual position. No attention mask is needed — the KV cache only contains past tokens.
 
 ## Putting It All Together
 
 ```python
-config = Qwen3Config.from_model_dir("checkpoint/Qwen3-0.6B")
-tokenizer = Qwen3Tokenizer.from_model_dir("checkpoint/Qwen3-0.6B")
-model = Qwen3Model(config)
-load_weights(model, "checkpoint/Qwen3-0.6B")
+config = Qwen3Config.from_model_dir("checkpoints/Qwen3-0.6B")
+tokenizer = Qwen3Tokenizer.from_model_dir("checkpoints/Qwen3-0.6B")
+
+# meta-device init: creates model structure without allocating memory
+with torch.device("meta"):
+    model = Qwen3Model(config)
+load_weights(model, "checkpoints/Qwen3-0.6B", dtype=config.dtype)
+# recompute RoPE buffers (they were meta tensors during init)
+for module in model.modules():
+    if hasattr(module, "_build_buffers"):
+        module._build_buffers()
 model.eval()
+model.to(device="cuda")  # or "cpu"
 
 messages = [{"role": "user", "content": "What is 2+2?"}]
 formatted = tokenizer.apply_chat_template(messages, enable_thinking=True)
 token_ids = tokenizer.encode(formatted)
-prompt_tensor = torch.tensor(token_ids)
 
 with torch.no_grad():
-    output_ids = generate(model, prompt_tensor, max_new_tokens=1024,
+    output_ids = generate(model, token_ids, max_new_tokens=1024,
                           temperature=1, top_k=-1, eos_token_id=config.eos_token_id)
 
 print(tokenizer.decode(output_ids))
@@ -597,20 +648,21 @@ Why left-pad? During generation, we always sample from the **last** token's logi
 
 ### Attention mask
 
-Pad tokens shouldn't participate in attention. We need a **padding mask** combined with the causal mask:
+Pad tokens shouldn't participate in attention. We need a **padding mask** combined with the causal mask. The mask is **additive** — `0` means attend, `-inf` means block:
 
 ```python
-def make_batch_mask(prompt_lengths, max_len, device):
-    # padding mask: True for real tokens, False for pad
-    pad_mask = torch.arange(max_len, device=device)[None, :] >= (max_len - prompt_lengths[:, None])
-    # causal mask: lower-triangular
-    causal = torch.tril(torch.ones(max_len, max_len, device=device)).bool()
-    # combine: [batch, 1, seq, seq] for broadcasting over heads
-    mask = pad_mask[:, None, None, :] & causal[None, None, :, :]
-    return mask  # True = attend, False = mask out
+# padding_mask: True = padding position (will be masked)
+causal_mask = torch.triu(torch.ones(max_len, max_len, device=device, dtype=torch.bool), diagonal=1)
+# combined: masked if causal-future OR padding-key
+combined = causal_mask[None, :, :] | padding_mask[:, None, :]
+# ensure every position can attend to itself — prevents softmax(all -inf) = NaN
+diag = torch.arange(max_len, device=device)
+combined[:, diag, diag] = False
+# additive mask: 0 = attend, -inf = block
+attn_mask = torch.where(combined, float("-inf"), 0.0).unsqueeze(1).to(dtype)  # (batch, 1, q, kv)
 ```
 
-Each element `mask[b, :, i, j]` answers: "in batch item `b`, can token at position `i` attend to token at position `j`?" It's `True` only if `j <= i` (causal) AND `j` is not a pad token.
+Each element answers: "can token at position `i` attend to position `j`?" It's `0` (attend) only if `j <= i` (causal) AND `j` is not a pad token. The **diagonal fix** (`combined[:, diag, diag] = False`) is critical — without it, padding positions whose entire row is masked would cause `softmax(all -inf) = NaN`. Allowing self-attention preserves valid numerics even for pad tokens.
 
 ### Position IDs
 
@@ -639,62 +691,74 @@ Production systems like vLLM use **continuous batching** — finished sequences 
 ### Implementation
 
 ```python
-def generate_batch(model, prompt_token_ids_list, max_new_tokens,
+def generate_batch(model, list_of_token_ids, max_new_tokens,
                    temperature=1.0, top_k=-1, eos_token_id=None, pad_token_id=0):
-    batch_size = len(prompt_token_ids_list)
-    prompt_lengths = [len(ids) for ids in prompt_token_ids_list]
-    max_prompt_len = max(prompt_lengths)
+    device = next(model.parameters()).device
+    dtype = next(model.parameters()).dtype
+    batch_size = len(list_of_token_ids)
+    lengths = [len(ids) for ids in list_of_token_ids]
+    max_len = max(lengths)
 
-    # left-pad all prompts to same length
-    padded = []
-    for ids in prompt_token_ids_list:
-        padding = [pad_token_id] * (max_prompt_len - len(ids))
-        padded.append(padding + ids)
-    input_ids = torch.tensor(padded, device=device)  # [batch, max_prompt_len]
+    # left-pad all sequences to the same length
+    padded = torch.full((batch_size, max_len), pad_token_id, device=device, dtype=torch.long)
+    position_ids = torch.zeros((batch_size, max_len), device=device, dtype=torch.long)
+    padding_mask = torch.ones((batch_size, max_len), device=device, dtype=torch.bool)  # True = pad
 
-    # build position ids (0 for pad, sequential for real tokens)
-    position_ids = torch.zeros_like(input_ids)
-    for i, plen in enumerate(prompt_lengths):
-        position_ids[i, max_prompt_len - plen:] = torch.arange(plen)
+    for i, ids in enumerate(list_of_token_ids):
+        pad_len = max_len - lengths[i]
+        padded[i, pad_len:] = torch.tensor(ids, device=device)
+        position_ids[i, pad_len:] = torch.arange(lengths[i], device=device)
+        padding_mask[i, pad_len:] = False
+
+    # prefill attention mask: causal + padding (additive)
+    causal_mask = torch.triu(torch.ones(max_len, max_len, device=device, dtype=torch.bool), diagonal=1)
+    combined = causal_mask[None, :, :] | padding_mask[:, None, :]
+    diag = torch.arange(max_len, device=device)
+    combined[:, diag, diag] = False
+    attn_mask = torch.where(combined, float("-inf"), 0.0).unsqueeze(1).to(dtype)
 
     # prefill
-    logits, kv_cache = model(input_ids, position_ids=position_ids)
-    next_tokens = sample(logits[:, -1, :], temperature, top_k)  # [batch, 1]
-    generated = [[t.item()] for t in next_tokens]
-
-    # track which sequences are still active
-    active = [True] * batch_size
+    logits, kv_cache = model(padded, position_ids, attn_mask=attn_mask)
+    next_tokens = sample(logits[:, -1, :], temperature, top_k)
+    if next_tokens.dim() == 1:
+        next_tokens = next_tokens.unsqueeze(1)
+    generated = [[next_tokens[i].item()] for i in range(batch_size)]
+    finished = [False] * batch_size
 
     # decode loop
-    for step in range(max_new_tokens - 1):
-        # position for new token: prompt_len + num_generated
-        pos = torch.tensor(
-            [prompt_lengths[i] + len(generated[i]) for i in range(batch_size)],
-            device=device,
-        ).unsqueeze(1)
+    for _ in range(max_new_tokens - 1):
+        if all(finished):
+            break
+        step_position_ids = torch.tensor(
+            [[lengths[i] + len(generated[i]) - 1] for i in range(batch_size)], device=device
+        )
+        # extend padding mask by one non-padding column for the new token
+        padding_mask = torch.cat(
+            [padding_mask, torch.zeros((batch_size, 1), device=device, dtype=torch.bool)], dim=1
+        )
+        decode_attn_mask = torch.where(padding_mask, float("-inf"), 0.0)[:, None, None, :].to(dtype)
 
-        logits, kv_cache = model(next_tokens.view(batch_size, 1),
-                                 position_ids=pos, kv_cache=kv_cache)
+        logits, kv_cache = model(next_tokens, step_position_ids, kv_cache, decode_attn_mask)
         next_tokens = sample(logits[:, -1, :], temperature, top_k)
+        if next_tokens.dim() == 1:
+            next_tokens = next_tokens.unsqueeze(1)
 
         for i in range(batch_size):
-            if active[i]:
-                tok = next_tokens[i].item()
-                generated[i].append(tok)
-                if eos_token_id and tok == eos_token_id:
-                    active[i] = False
+            if not finished[i]:
+                generated[i].append(next_tokens[i].item())
+                if eos_token_id is not None and next_tokens[i].item() == eos_token_id:
+                    finished[i] = True
 
-        if not any(active):
-            break
-
-    return [ids + gen for ids, gen in zip(prompt_token_ids_list, generated)]
+    return [ids + gen for ids, gen in zip(list_of_token_ids, generated)]
 ```
 
 The key differences from single-prompt generation:
 - **Left-padding** to align all prompts to the same length
 - **Per-sequence position IDs** instead of a single offset
+- **Combined causal + padding mask** during prefill, with the diagonal fix to prevent NaN
+- **Growing padding mask** during decode — each new token extends the mask by one column
+- **Decode attention mask** blocks attention to padding positions in the KV cache
 - **Per-sequence EOS tracking** — each sequence in the batch can finish independently
-- The model's forward pass needs to accept `position_ids` tensor instead of a scalar `position_offset`
 
 This is a simplified version. Production batch generation also handles: dynamic batching (adding new requests mid-generation), PagedAttention (efficient KV cache memory management), speculative decoding, and prefix caching.
 
@@ -705,7 +769,7 @@ Some non-obvious bugs I hit during implementation:
 - **`head_dim` is not `emb_dim // n_heads`**: Qwen3 explicitly sets `head_dim = 128` while `emb_dim // n_heads = 64`. This caused cryptic shape mismatches during weight loading.
 - **`^` is not exponentiation in Python**: `base ^ exponent` is bitwise XOR. Use `base ** exponent`.
 - **Operator precedence**: `base ** torch.arange(...) / dim` computes `(base ** arange) / dim`, not `base ** (arange / dim)`. Parentheses matter.
-- **`nn.Linear` is a callable, not a tensor**: `self.W_gate(x)` calls the linear layer. `x * self.W_gate` tries element-wise multiply with the module object.
+- **`nn.Linear` is a callable, not a tensor**: `self.gate_proj(x)` calls the linear layer. `x * self.gate_proj` tries element-wise multiply with the module object.
 - **`keepdim=True` in reductions**: Without it, mean/sum collapse the dimension entirely, breaking broadcasting for subsequent operations.
 - **KV cache concat dimension**: K/V shape is `[batch, n_kv_groups, seq, head_dim]`. New tokens concat along `dim=2` (sequence), not `dim=1` (heads).
 - **Causal mask uses `-inf`, not 0**: `softmax(0) > 0` would leak future information. Only `softmax(-inf) = 0` truly blocks it.
