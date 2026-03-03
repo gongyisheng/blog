@@ -17,7 +17,3 @@ url = "/tags/"
 [[items]]
 name = "About Me"
 url = "/about_me/"
-
-[[items]]
-name = "Links"
-url = "/links/"
