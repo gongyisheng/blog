@@ -386,6 +386,34 @@ attn_mask = torch.where(causal_mask, float("-inf"), 0.0)  # additive mask
 # in forward: scores = scores + attn_mask
 ```
 
+Here's how the mask is built step by step (for `seq_len=4`):
+
+```
+1. torch.ones(N, N) — all-ones boolean matrix
+
+   1 1 1 1
+   1 1 1 1
+   1 1 1 1
+   1 1 1 1
+
+2. torch.triu(..., diagonal=1) — upper triangle above the main diagonal
+
+   0 1 1 1
+   0 0 1 1
+   0 0 0 1
+   0 0 0 0
+
+   True = future positions (should NOT attend)
+
+3. torch.where(causal_mask, -inf, 0.0) — convert to additive mask
+
+      K0   K1   K2   K3
+   Q0 [  0  -inf -inf -inf ]  ← token 0 sees only itself
+   Q1 [  0    0  -inf -inf ]  ← token 1 sees 0..1
+   Q2 [  0    0    0  -inf ]  ← token 2 sees 0..2
+   Q3 [  0    0    0    0  ]  ← token 3 sees all
+```
+
 **Softmax in float32**: `F.softmax(scores, dim=-1, dtype=torch.float32).to(x.dtype)` — softmax is computed in float32 for numerical stability, then cast back. This matches HuggingFace's implementation and prevents precision-related token divergence.
 
 **Why `-inf` instead of 0?** Because of softmax. If you mask with 0, `softmax(0)` gives some positive value — the model would still attend to future tokens. `softmax(-inf) = 0` — the masked positions contribute exactly zero attention weight.
