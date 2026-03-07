@@ -10,6 +10,8 @@ Better late than never — I've started a repo called [llm-from-scratch](https:/
 
 Full code: [llm_from_scratch/qwen3](https://github.com/gongyisheng/llm-from-scratch/tree/main/qwen3)
 
+Target model: [Qwen3-0.6B](https://huggingface.co/Qwen/Qwen3-0.6B)
+
 I strongly recommend using an AI coding assistant (Claude, Codex, etc.) to guide you through implementing it yourself, step by step (just like my repo). Don't just read the code — ask it to teach you. For example:
 
 > *"I want to implement Qwen3-0.6B inference from scratch in PyTorch. Refer to this codebase and its [learning guide](https://github.com/gongyisheng/llm-from-scratch/tree/main/qwen3#learning-guide): https://github.com/gongyisheng/llm-from-scratch/tree/main/qwen3. Don't write the code for me — explain the math and design choices behind each component, answer my questions, discuss trade-offs with me, and guide me to implement it myself. The goal is to run inference successfully end to end. Start with Step 1 (config) and teach me one piece at a time."*
