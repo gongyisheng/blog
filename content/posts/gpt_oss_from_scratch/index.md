@@ -425,6 +425,8 @@ The likely timeline:
 3. **Backward pass**: gradients computed and accumulated in BF16/FP32
 4. **After training**: discard the master weights, ship only the MXFP4 version
 
+The tricks that make FP4 training feasible: **stochastic rounding** (reduces quantization bias), **block-wise scaling** (the shared 8-bit exponent per 32 elements), and **random Hadamard transforms** (spreads outlier values across the block so no single element dominates the shared scale).
+
 **Why not just quantize after training?** Post-training quantization (PTQ) is fast but at 4-bit the error noticeably degrades quality. The key insight is that **quantization error is not random noise — it's deterministic and structured**. For a given weight and quantization scheme, the rounding error is always the same. Because it's systematic, the model can learn to compensate: QAT does this by adjusting all weights during training.
 
 Note that **QLoRA** relies on the same fact. Besides, only a small percentage of weights have large magnitude and cause significant quantization error, so the error matrix is effectively low-rank. QLoRA freezes the quantized weights and trains low-rank adapters to learn these errors directly.
