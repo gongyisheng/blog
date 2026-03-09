@@ -48,7 +48,7 @@ The full forward pass pipeline becomes:
 
 In the [dense Qwen3 post](../qwen3_from_scratch/#swiglu-ffn), we saw that FFN weights make up ~2/3 of a transformer's parameters — they're where the model stores factual knowledge. More parameters = more capacity = smarter model. But with a dense FFN, **every parameter is activated for every token**. If you want 10× more knowledge, you need 10× more compute per token. This is the fundamental scaling bottleneck of dense models.
 
-MoE breaks this tradeoff: instead of one large FFN that processes every token, use **128 small FFNs (experts)** and a **router** that picks only **8** of them per token. The result:
+MoE breaks this tradeoff: instead of one large FFN that processes every token, use **128 small FFNs (experts)** and a **router** that picks only **8** of them per token, activating a small fraction of the total parameters each decode step. The result:
 
 | Aspect | Dense FFN | MoE (128 experts, top-8) |
 |---|---|---|
@@ -56,7 +56,7 @@ MoE breaks this tradeoff: instead of one large FFN that processes every token, u
 | Active parameters per token | All of them | 8/128 = 6.25% |
 | Qwen3 example | 1024 × 3072 × 3 = 9.4M | 128 × (2048 × 768 × 3) = 603M total, 37.7M active |
 
-The model learns **much more** (30B params) while computing **much less** per token (~3B active). Different experts specialize in different types of tokens — the router learns to send each token to the most relevant experts.
+The model learns **much more** (30B params) while computing **much less** per token (~3B active). Different experts specialize in different slices of the vocabulary — the router learns to send each token to the most relevant experts.
 
 ### Design variant: shared experts
 
@@ -65,6 +65,12 @@ Not all MoE models route experts the same way. For example, DeepSeek-MoE introdu
 Qwen3 MoE does **not** use shared experts — all 128 experts go through the same top-k routing, which is simpler but means multiple experts may redundantly learn overlapping general abilities. 
 
 Note that Qwen3's successor Qwen3-Next adds shared experts as an architectural improvement.
+
+### How do experts actually differ?
+
+In experiments, we observe that experts specialize not by semantic capability (e.g., "math expert" or "code expert") but by **token identity** — certain tokens consistently route to certain experts regardless of context. This is especially visible for rare or low-frequency words. 
+
+This vocabulary-driven routing helps explain why **randomly dropping a fraction of experts has surprisingly little impact on model quality**. Since each expert handles a slice of the vocabulary rather than a unique skill, losing one expert mostly means its tokens get rerouted to other experts that already have overlapping coverage. This observation also motivates expert pruning and distillation techniques for deploying MoE models under memory constraints.
 
 ## Config
 
