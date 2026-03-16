@@ -299,7 +299,7 @@ To tie this together — here's how context engineering played out when I built 
 
 **V3.5 Failed attempt** Assumed instability was a model problem. Tried multi-turn RL on open-source models (Search-R1 style) to train a specialized tagging model. Months of effort, still couldn't surpass closed-source models on this task.
 
-**V4: Add web search tool** Noticed internal knowledge wasn't enough for some categories. Added a web search tool for external context. Accuracy: ~75%. Helped with coverage but didn't fix the instability problem.
+**V4: Add web search tool** Noticed internal knowledge base wasn't enough for some categories. Added a web search tool for external context. Accuracy: ~75%. Helped with coverage but didn't fix the instability problem.
 
 **V5: Workflow decomposition.** Split the single long prompt into 3 focused steps, each with its own context. Accuracy: ~85%. Smaller, focused contexts per step — the model followed instructions more reliably.
 
