@@ -295,21 +295,26 @@ To tie this together — here's how context engineering played out when I built 
 
 **V2: Prompt engineering.** Added detailed examples to teach the model tagging patterns. Accuracy: ~70%. Better, but suffered from instability — the long prompt caused the model to occasionally ignore its own rules or hallucinate tags.
 
-**V2.5 Failed attempt** Assumed instability was a model problem. Tried multi-turn RL on open-source models (Search-R1 style) to train a specialized tagging model. Months of effort, still couldn't surpass closed-source models on this task.
+**V3: Structured output + guardrails.** Added a `submit_answer` tool to force the model to return answers in a structured format, with guardrails that validate and reject malformed or out-of-schema responses. This didn't improve accuracy directly, but eliminated an entire class of failures — hallucinated formats, missing fields, and unparseable outputs.
 
-**V3: Web search.** Noticed internal knowledge wasn't enough for some categories. Added a web search tool for external context. Accuracy: ~75%. Helped with coverage but didn't fix the instability problem.
+**V3.5 Failed attempt** Assumed instability was a model problem. Tried multi-turn RL on open-source models (Search-R1 style) to train a specialized tagging model. Months of effort, still couldn't surpass closed-source models on this task.
 
-**V4: Workflow decomposition.** Split the single long prompt into 3 focused steps, each with its own context. Accuracy: ~85%. Smaller, focused contexts per step — the model followed instructions more reliably.
+**V4: Web search.** Noticed internal knowledge wasn't enough for some categories. Added a web search tool for external context. Accuracy: ~75%. Helped with coverage but didn't fix the instability problem.
 
-**V5: On-demand context loading.** Solved the remaining instability by applying the same patterns we discussed: a `load_pattern` tool (like skills) that loads relevant tagging rules on demand, and keyword-based background hints (like hooks) that inject domain context when specific patterns are detected. Accuracy: ~95-100%. The trade-off: requires continuously adding new background information as new edge cases appear.
+**V5: Workflow decomposition.** Split the single long prompt into 3 focused steps, each with its own context. Accuracy: ~85%. Smaller, focused contexts per step — the model followed instructions more reliably.
+
+**V6: Context Engineering.** Solved the remaining instability by applying the same patterns we discussed: a `load_pattern` tool (like skills) that loads relevant tagging rules on demand, and keyword-based background hints (like hooks) that inject domain context when specific patterns are detected. Accuracy: ~95-100%. The trade-off: requires continuously adding new background information as new edge cases appear.
 
 The progression mirrors exactly the principles in this post. Context bloat → decompose. Instability → on-demand loading. Missing knowledge → action-triggered context. Each step was a context engineering decision, and each one moved the needle.
 
 ## References
 
-Thanks to [@jakevin7](https://x.com/jakevin7) and [@HiTw93](https://x.com/HiTw93) for their posts that inspired parts of this article. Thanks to [Bub](https://github.com/bubbuild/bub) and [Tape Systems](https://tape.systems/) for their agent system designs.
+Thanks to [@jakevin7](https://x.com/jakevin7) and [@HiTw93](https://x.com/HiTw93) for their posts that inspired parts of this article. 
+
+Thanks to [Bub](https://github.com/bubbuild/bub), [Tape Systems](https://tape.systems/), and [pi-mono](https://github.com/badlogic/pi-mono) for their agent system designs.
 
 - https://x.com/jakevin7/status/2032779857952645477
 - https://x.com/HiTw93/status/2032091246588518683
 - https://github.com/bubbuild/bub
 - https://tape.systems/
+- https://github.com/badlogic/pi-mono
