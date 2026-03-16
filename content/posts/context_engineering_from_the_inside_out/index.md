@@ -303,7 +303,7 @@ To tie this together — here's how context engineering played out when I built 
 
 **V5: Workflow decomposition.** Split the single long prompt into 3 focused steps, each with its own context. Accuracy: ~85%. Smaller, focused contexts per step — the model followed instructions more reliably.
 
-**V6: Context engineering.** Solved the remaining instability by applying the same patterns we discussed: a `load_pattern` tool (like skills) that loads relevant tagging rules on demand, and keyword-based background hints (like hooks) that inject domain context when specific patterns are detected. Accuracy: ~95-100%. The trade-off: requires continuously adding new background information as new edge cases appear.
+**V6: Context engineering.** Solved the remaining instability by applying the same patterns we discussed: a `load_pattern` tool (like skills) that loads relevant tagging rules on demand, and keyword-based background `hints` (like hooks) to inject domain context when specific keywords are detected. Accuracy: ~95-100%. The trade-off: requires continuously adding new domain knowledge as new edge cases appear.
 
 The progression mirrors exactly the principles in this post. Context bloat → decompose. Instability → on-demand loading. Missing knowledge → action-triggered context. Each step was a context engineering decision, and each one moved the needle.
 
