@@ -285,7 +285,7 @@ Claude Code and most agents use reactive compaction: the **system** detects when
 
 If the model later needs information from before the anchor, it can search back via `tape.search`. One genuine advantage: this makes subagent history searchable — instead of losing a subagent's full exploration when it returns a summary, the tape preserves everything and lets the parent agent retrieve details later. But my concern is that the model may compact too frequently — each compaction resets the prefix, causing KV cache misses.
 
-Proactive compaction also places a higher requirement on the model itself — it must judge *when* to compact, *what* to keep, and *when* to search back. The model doesn't know what it doesn't know. If it doesn't realize information is missing, it won't search — it'll just produce an incomplete or hallucinated answer.
+Proactive compaction also places a higher requirement on the model itself — it must judge *when* to compact, *what* to keep, and *when* to search back. If it doesn't realize information is missing, it won't search.
 
 ## Closing: A Practical Example of me Building Agent
 
