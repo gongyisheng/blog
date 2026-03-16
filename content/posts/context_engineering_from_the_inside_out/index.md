@@ -297,15 +297,24 @@ To tie this together — here's how context engineering played out when I built 
 
 **V3: Structured output + guardrails.** Added a `submit_answer` tool to force the model to return answers in a structured format, with guardrails that validate and reject malformed or out-of-schema responses. This didn't improve accuracy directly, but eliminated an entire class of failures — hallucinated formats, missing fields, and unparseable outputs.
 
-**V3.5 Failed attempt** Assumed instability was a model problem. Tried multi-turn RL on open-source models (Search-R1 style) to train a specialized tagging model. Months of effort, still couldn't surpass closed-source models on this task.
-
-**V4: Add web search tool** Noticed internal knowledge base wasn't enough for some categories. Added a web search tool for external context. Accuracy: ~75%. Helped with coverage but didn't fix the instability problem.
+**V4: Add web search tool.** Noticed internal knowledge base wasn't enough for some categories. Added a web search tool for external context. Accuracy: ~75%. Helped with coverage but didn't fix the instability problem.
 
 **V5: Workflow decomposition.** Split the single long prompt into 3 focused steps, each with its own context. Accuracy: ~85%. Smaller, focused contexts per step — the model followed instructions more reliably.
 
 **V6: Context engineering.** Solved the remaining instability by applying the same patterns we discussed: a `load_pattern` tool (like skills) that loads relevant tagging rules on demand, and keyword-based background `hints` (like hooks) to inject domain context when specific keywords are detected. Accuracy: ~95-100%. The trade-off: requires continuously adding new domain knowledge as new edge cases appear.
 
-The progression mirrors exactly the principles in this post. Context bloat → decompose. Instability → on-demand loading. Missing knowledge → action-triggered context. Each step was a context engineering decision, and each one moved the needle.
+### Failed Attempts
+
+I have tried a lot of failed attempts between v3 and v4. At that time the agent suffers from two problems, unstable response and reasoning error. 
+
+**Clean input text.** Tried many ways to clean input text before tagging: removing UUIDs by pattern, stripping prefixes, removing hashes, etc. Only 2 out of all attempts actually helped: removing email addresses and removing URLs. The rest either had no effect or hurt performance. Over-cleaning stripped context the model was relying on.
+
+**Optimize tool response schema.** Noticed tool responses were long. JSON schemas have duplicated keys across every result object, wasting tokens. Restructured search results: renamed fields (`product_name` → `name`, `product_description` → `desc`, reordered from `product_name, product_description, type` to `type, name, desc`) and trimmed to a cleaner, shorter schema. But this change actually made performance worse (-5%).
+
+**Use a better model.** Assumed instability was caused by insufficient model reasoning ability. Tried upgrading to stronger models, but accuracy peaked with gpt-5-mini at reasoning effort=low. Increasing reasoning effort (medium / high) or switching to gpt-5 didn't help at all. This implies model ability is not a limitation on this task.
+
+**Train a specialized model.** Assumed instability was caused by human preference varying across cases: different annotators, different edge-case judgments, and that these preferences were too numerous to enumerate in a prompt. Decided to train a customized model to internalize them instead. Tried multi-turn RL on open-source models (Search-R1 style) to train a specialized tagging model. Months of effort, just reached the same level of performance as closed-source models, likely limited by knowledge base data quality and the base model itself.
+
 
 ## References
 
